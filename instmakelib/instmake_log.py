@@ -140,6 +140,10 @@ class LogRecord:
         else:
             sys.exit("TimeIndex field '%s' not recognized." % (field,))
 
+    def RealStartTime(self):
+        """Return the real start time; this is useful for sorting records"""
+        return self.times_end[self.REAL_TIME]
+
     def NormalizePath(self, path):
         """Given a path, if it's relative, join it with this record's CWD.
         Normalize the result, even if the path is absolute and is not joined
