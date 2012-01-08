@@ -1,0 +1,112 @@
+pluginmanager is a python module to allow an application to easily
+load plugins, and allows the application to allow the user to specify
+multiple locations from which to load the plugins.
+
+What are plugins? Plugins are single-file chunks of python code that are
+loaded into their own namespace at run-time.
+
+Consider this standard bit of Python code:
+
+import sys
+
+When that happens, the 'sys' module is loaded into its own namespace
+and the calling application has a variable called 'sys' which is a "pointer"
+to this new namespace. The calling application can use this 'sys' pointer
+like this:
+
+print sys.argv
+
+
+Loading a plugin at run-time is similar:
+
+some_plugin = plugins.LoadPlugin("type", "name")
+
+print some_plugin.some_value
+
+That is, the python code is loaded and executed in its own namespace,
+and the calling application gets a variable which points to that
+namespace.
+
+pluginmanager.py provides a class called PluginManager. Your application
+will have a single instance of PluginManager. It is initialized with
+four variables:
+
+1. List of package directories
+2. List of filesystem directories
+3. List of environment variables
+4. List of prefixes
+
+A "package directory" is a directory that is located in the same directory
+as the calling application. That is, the package directories are the
+directories for the standard plugins that come bundled with an application.
+
+If your application directory layout looks like:
+
+MyApplication/
+    myapp
+    StandardPlugins/
+       plugin1.py
+       plugin2.py
+
+then "StandardPlugins" is a package directory for PluginManager.
+
+Abitrary directories, which I call "filesystem directories" can also
+be passed to PluginManager. This is useful if your application allows
+users to specifiy plugin directories on the command-line, like:
+
+$ myapp -L /my/plugins -L /my-coworkers/plugins blah blah
+
+Environment variables can also be used to give PluginManager more directories
+in which to look for plugins. If you want to provide a PATH-like environment
+variable for the user to use, just tell PluginManager about it. It will
+parse the environment variable as PATH would be parsed --- the value should
+be a colon-separated list of directories. Thus:
+
+$ export MYAPP_PLUGINS=/my/plugins:/my-coworkers/plugins
+$ myapp blah blah
+
+Prefixes help categorize plugins. A single application may have more than
+one plugin type; the easiest way to organize them is based on name. So
+PluginManager enforces a two-part name for plugin files: <prefix>_<name><ext>
+Thus, the following are valid PluginManager plugin filenames:
+
+report_ptree.py
+report_advanced.so
+graph_simple.py
+
+You never have to worry about the <ext> (or "extension") part of the
+plugin name; PluginManager will handle that for you. But you do need
+to know the type and the name of the plugin. Furthermore, when you
+initialize a PluginManager instance, you must give it the list of
+all possible plugin types that your application will accept. *This*
+is the list of prefixes.
+
+So, combining all the above examples into a single PluginManager instance,
+I'd create a PluginManager instance via:
+
+from PluginModules import pluginmanager
+
+pkg_dirs = [ "StandardPlugins" ]
+fs_dirs = [ "/my/plugins", "/my-coworkers/plugins" ]
+env_vars = [ "MYAPP_PLUGINS" ]
+prefixes = [ "report", "graph" ]
+
+plugins = pluginmanager.PluginManager(pkg_dirs, fs_dirs, env_vars, prefixes)
+
+At this point, your PluginManager will scan the directories to come up
+with a list of all possible plugins that it could load.
+
+Once you have a PluginManager instance, you can use the following methods
+that it provides:
+
+PluginNames(prefix)
+    For a given plugin type ("prefix"), return a list of plugin names that
+    could be loaded.
+
+LoadPlugins(prefix, name)
+    Load a plugin based on plugin type ("prefix") and name.
+    Returns the pointer to the new module.
+
+LoadAllPlugins(prefix)
+    Load all available plugins of a given type ("prefix"). Returns
+    a list of pointers to the new modules.

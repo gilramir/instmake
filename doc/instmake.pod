@@ -1,0 +1,589 @@
+
+=head1 NAME
+
+instmake - Instrumented Make
+
+=head1 SYNOPSYS
+
+B<BUILD>
+
+B<instmake> [-L log_file] [--force]
+    [-a audit-plugin] [-o make_log]
+    [-e env-var] [--vws=prefix] [--logs=prefix] [--fd] 
+    [--stop-cmd-contains text] [--noinst]
+    make ...
+
+B<REPORT>
+
+B<instmake> [-P plugin_dir] [-L log_file] [-L log_file]
+    [-d|--default] [--vws=prefix] [--logs=prefix]
+    [-p|--print print-plugin] [-s|--stats report-plugin]
+    [--help] [report-options]
+
+B<MISCELLANEOUS>
+
+B<instmake> [-L log_file] [--vws=prefix] [--logs=prefix]
+    [--text|--csv|--log-version|--log-header]
+
+
+B<HELP>
+
+B<instmake> [-P plugin_dir] [-h|--help]
+
+B<instmake> [-P plugin_dir] [-a audit-plugin] [-h|--help]
+
+B<instmake> [-P plugin_dir] [-s report-plugin] [-h|--help]
+
+=head1 DESCRIPTION
+
+Instmake is a tool for recording all the processes that a 'make' process
+spawns during a build, and summarizing that data in reports.
+During a build, instmake wraps the initial invocation of 'make', and
+causes that 'make' to re-invoke 'instmake' as a wrapper of each spawned process,
+including sub-makes. In this way, instmake can record data about every
+spawned process in a build.
+
+You can use any 'make' command you wish; instmake is not dependendant upon
+then name of the build tool being 'make'. 
+Instmake is also compatible with clearmake.
+
+Instmake saves its instrumentation data of a build in a log file. The log file
+is in a special binary format and is not directly comprehensible by
+humans. Instmake comes with reports that produce useful information about
+the log file. It also has a "--text" option to dump the log in an ASCII
+format in case you really do want to view the log directly, or pipe it into another
+tool. However, instmake is easily extensible via plugins, so it's easy
+to write reports in instmake's implementation language, Python.
+
+Instmake can make use of plugins for various uses. It looks for plugins in
+its "Reports" directory (it used to be that the only type of plugin was a
+report plugin, hence the name of this directory) in its installation location,
+in ~/.instmake-plugins,
+in any directory listed via the -P option, and finally, in any directory
+mentioned in the INSTMAKE_PATH environment variable, which should be formatted
+like the PATH environment variable, namely, as a colon-separated concatenation
+of directory names.
+
+Please note that PIDs and PPIDs in instmake have a timestamp attached to
+them; they are not simply the system PID and PPIDs. This is to provide
+uniquess across a long build, where PIDs wrap.
+
+
+=head2 ANALYZING BUILDS
+
+The most useful report to use when starting an analysis is 'ptree -f',
+which produces a complete build log with all the fields that instmake
+has recorded, arranged in process hierarhcy format.
+
+To analyze why a build might be slow, the following reports are useful:
+
+B<conprocs> - shows how parallel the build was
+
+B<tooltime> - shows the time spent per tool
+
+B<parts> - divides the build into N parts to show you what ran during those parts
+
+B<duration> - sorts jobs by duration.
+
+To analyze race conditions, the following reports are useful:
+
+B<mwrite> - in conjunction with the clearaudit audit plugin for Clearcase, will show writes to the same file.
+
+B<mmake> - will show multiple make processes happening in the same directory
+
+B<timeline> - (or conprocs --timeline) shows a timeline of processes.
+
+B<timegraph> - creates an ASCII chart which graphically shows the timeline, but is only good for small builds
+
+B<duplicate> - finds jobs that ran more than once in the same directory
+
+=head1 OPTIONS
+
+=over 4
+
+=item --csv
+
+Spit most of the contents of an instmake log to stdout in comma-separated
+value format. Since this format is mostly used for importing into
+spreadsheet programs, not all the fields in an instmake-log record are
+exported, since some of them don't make sense for viewing from a spreadsheet.
+
+=item -d | --default
+
+Use the default log file. This switch is useful if you're running a report
+which requires two log files, and one of the log files is the default
+log file.
+
+
+=item -e
+
+Instmake can record the value of an environment variable before each command
+is run. You can list multiple -e options on the command-line.
+
+
+=item --fd
+
+Record which file descriptors are open before a command starts and
+after a command finishes. This is useful for tracking down problems
+where make's job-pipe closes. If that's what you're trying to debug,
+you'll probably also want to use "-e MAKEFLAGS", as make tells its
+sub-makes which file descriptor is the job-pipe by adding
+"--jobserver-fds" to the MAKEEFLAGS environment variable.
+
+=item --force
+
+By default, instmake will not start a build if the instmake log it is
+supposed to create already exists. The "--force" option allows you to
+overwrite the existing instmake log without having to manually delete it.
+
+
+=item -L log_file
+
+Specify a log file. When running a build, the log file will be
+written. When exporting the data or running a report, the log file will
+be read. If a report requires two log files, you may give the -L option twice.
+
+If no -L option is given during a build, or for a report that requires
+only one log file, the default log file is used. The default log file is
+~/.instmake-log
+
+When running a report, the instmake logs can be gzipped. Instmake will
+gunzip the logs on-the-fly as it reads the logs. Instmake cannot, however,
+automatically create gzipped log files.
+
+=item --log-header
+
+Prints information about the instmake run. This is stored in the header
+of the instmake log, and is distinct from the records about each command
+run by instmake.
+
+=item --log-version
+
+Simply prints the version number of the log file. This is useful when using
+the --text option. If you have a program that parses the output from --text,
+you should verify with --log-version that you're parsing the right style
+of log.
+
+=item --logs=prefix
+
+Often it is nice to be able to save both the instmake log and make log
+with the same prefix. You can do this by using -o and -L, but --logs
+give you a shortcut. With --logs you can supply a single pathname plus
+prefix and instmake will create two files using that prefix:
+
+    prefix.imlog
+    prefix.make.out
+
+This is similar to the --vws option, but with --logs the entire path
+is given as part of the prefix, and of course, the path can be anywhere,
+not just in ClearCase working-storage.
+
+This option also serves for reading instmake logs. That is, you can
+use --logs to specify an instmake log in all the same cases where you can
+use the -L option.
+
+=item --noinst
+
+This switch turns off instrumentation. Why run instmake without
+instrumentation? It's a handy way of combining 4 functions: running
+a build, saving the log (when using -o), recording the command used
+to run the build (in the instmake log), and recording the time spent
+running the build. The resulting instmake log will have exactly one
+record in it: the record for the top-level make. But no jobs run by that
+make will be instrumented by instmake, so the build won't be slower than
+if you had run a normal build without 'instmake --noinst'.
+
+=item -o make_log
+
+When running a build, the output from the build will be saved to the named
+file. This is a convience; you can of course redirect the output of instmake
+to a log file as you would with any other build tool. For example:
+
+ instmake -o make.out make production.testall
+
+Is equivalent to:
+ 
+ instmake make producion.testall > make.out 2>&1
+
+=item -P plugin_dir
+
+Lists a directory to search for plugins. The -P option can be
+repeated as many times as necessary.
+
+=item --print
+
+Use a specific print plugin. A default print plugin is used if B<--print>
+or B<-p> are not specified.
+
+=item --stats
+
+Run the report (in the beginning they were just statistical reports,
+hence the name of this option).
+
+=item --stop-cmd-contains
+
+Sometimes it is useful to stop a build after a certain command has run. This
+option allows you to stop the build if the command-line being run contains
+any text pattern. The build is stopped after the command finishes executing.
+A message starting with "*** Instmake stop condition met:" is printed to stderr,
+and the instmake which ran the command exits with a return value of 101.
+Note that this may not stop the build in a timely manner if you are running
+make with the -k or -i option.
+
+You can provide more than one --stop-cmd-contains options on the command-line.
+Instmake will stop if any of the given text patterns are found in the command-line.
+
+=item --text
+
+Spit the contents of an instmake log to stdout in text format. Note that an
+instmake log is B<not> in text format, thus this option. This is useful
+if you wish to quickly browse the log or have a non-Python-based tool
+read the log.
+
+=item --vws=prefix
+
+Often, when working in a ClearCase view, it is nice to be
+able to save instmake logs and make logs in the view's working storage
+directory (or more correctly, in its parent directory). The --vws
+option allows you to speficy a prefix for your log files, and the instmake
+log and make log will be put into your current view's view-working-storage
+parent directory.
+
+For example, if your view's working-storage is located in /ws/username/myname-view,
+and you use --vws=baseline, then the following logs will be created:
+
+    /ws/username/baseline.imlog
+    /ws/username/basline.make.out
+
+This option is like the --logs option, except that with this option you only
+need specify the basename of the files; the path is chosen automatically by
+looking at the current ClearCase view.
+
+This option also serves for reading instmake logs. That is, you can
+use --vws to specify an instmake log in all the same cases where you can
+use the -L option.
+
+
+=head1 REPORTS
+
+The list of reports can be had via "instmake --help", along with a usage
+statement for each report. Each report has its own options. Some of the
+reports include:
+
+=item at
+
+Shows which jobs were running 'at' a specific time or condition.
+
+=item bottleneck
+
+Looks at how parallel a build is and finds the bottlenecks in a build.
+A bottleneck is a place in time where few jobs are running at the same time.
+"Few" is defined as per a one-tail test, which
+is (mean - 1.64 * standard_deviation).
+
+=item clidiff
+
+Takes to instmake build logs and analyzes certain command lines, ignoring
+the parts that *should* differ between builds (root directory of build, etc.),
+to see if there are any differences that matter between builds.
+
+clidiff can analyze: gcc, gld, ar, and icc command-lines.
+
+=item clilen
+
+Sorts command-lines by their length.
+
+=item concat
+
+Concatenates multiple instmake logs into one new log. As a convenience,
+this plugin can also accept instmake log names directly on the command-line,
+instead of requiring -d, -L, --vws, or --logs. For example:
+
+    instmake -s concat new.imlog old1.imlog old2.imlog old3.imlog
+
+=item conprocs
+
+Show the concurrency of processes. Optionally show a timeline showing
+which processes ran at the same time as other processes.
+
+=item deps
+
+Prints a graph structure to stdout showing the file and action dependency
+graph. This only works if the instmake log has the file input and output
+information gathered via either clearaudit option.
+
+=item dirs
+
+Report all the directories used in a build. All processes are checked for
+their CWD. A count of the number of processes per directory is also given.
+
+=item dump
+
+Print the instmake log, nicely formatted. This is like the 'ptree --full' report,
+but no attempt is made to order the processes in a hierarchy; the log is just
+dumped in order.
+
+=item duplicate
+
+This report finds duplicate job. Any command with the same command-line and
+operating in the same working directory is considered a duplicate.
+
+=item duration
+
+Show all jobs, sorted by duration
+
+=item grep
+
+Searches for job records whose fields match a certain regex.
+The default field to search is the command-line field, but you
+can choose other fields. The binary field "Audit OK" (--auditok) can be
+checked against True or False (or T/F, t/f, 1/0).
+
+=item mmake
+
+Report multiple makes in a single directory.
+
+=item mwrite
+
+Reports which commands in an instmake log write to the same file.
+This is most useful if file I/O information is available in the instmake log
+by building with the clearaudit audit plugin, however if that information
+is not available, then the command lines that the "clidiff" report knows how
+to parse (gcc) are parsed to find the output files.
+
+This report has a peculiariaty in that it will combine multiple instmake
+records into a single pseudo-record when the commands are part of a single
+set of actions in a makefile. Currently the report shows these pseudo records
+in a way that looks like a normal record, except for the fact that the PID
+is a list of all the PIDs that went into making the psuedo record, and the
+command-line is a concatenation of the command-lines from the various records,
+separated by colons. This should be fixed in the future to make the appearance
+of the pseudo-record less confusing.
+
+=item ovtime
+
+Overall time. Shows the overall time of the build in a format similar to the
+'time' command. Be aware that the instrumentation process creates over head,
+so the 'ovtime' timings, while close in measuring the uninstrumented time of the
+build, are not exact.
+
+=item parts
+
+Divides a log into N parts, based on time, and shows the summary of numer of
+jobs running per part, collated by tool.
+
+=item pid
+
+Prints the data for a specific PID. Note that instmake uses for its PID
+a combination of the OS-given PID of the process and the hour/minute of the job.
+This is to provide uniqueness, as during a large build the PIDs may wrap
+around and repeat many times.
+
+=item ptree
+
+Prints a PID-based tree of jobs.
+
+=item shell
+
+Prints the records, or makefile/line-numbers, that contain command-lines
+that GNU make would have run via system() instead of fork()/exec().
+This is due to either special shell characters in the command-line,
+or the first argument in the command-line being a shell reserved word.
+
+=item timegraph
+
+Print an ASCII-art graph of processes. Processes are aligned to show
+concurrency, and to show the job-slot used to run that process, if using
+make -jN, where N > 1.
+
+=item timeline
+
+Shows a timeline of which processes ran at the same time as other processes.
+Same as "conprocs --timeline", but can work with instmake logs that
+are missing a top-most record (created with "instmake grep -o").
+
+=item tooldiff
+
+This shows some simple stats for each tool, but compares the stats between
+two instmake logs, showing 'before', 'after', and 'percent-change'.
+A tool is considered to be the first argument in a command-line.
+
+=item tooltime
+
+This shows some simple stats for each tool. A tool is considered to be the first
+argument in a command-line.
+
+=item waiting
+
+Shows how long each job is idle. That is, real_time - (user_time + sys_time)
+
+=head1 PRINT PLUGINS
+
+=item csv
+
+This prints a subset of the fields in comma-separated format. The output
+is suitable for importing into a spreadsheet program. It has been tested
+with Gnumeric.
+
+=item default
+
+The default print plugin prints all the fields in an instmake log record,
+one per line. This print plugin produces verbose output, but all information
+is available.
+
+=item fields
+
+This shows the same data as the default plugin, but in a way that is easier
+for text-processing scripts to read. There is no indentation to show PID
+hierarchy, and the field names and values are separated by a single tab.
+Fields with multiple values have their field names repeated on each line,
+to help grepping.
+
+=item grep
+
+This uses the information that instmake stores and prints
+a one-line summary of the instmake log record, including makefile name,
+makefile line number, and command-line. The output format looks like the
+output of 'grep', and is, not surprisingly, useful when combined with the
+'grep' instmake report.
+
+=head1 AUDIT PLUGINS
+
+=item clearaudit[,full][,leave-do]
+
+When building in a ClearCase view, instmake can run clearaudit during
+the build to get dependency information (input files and output files
+for each command). To use this you must not have the CLEARAUDIT_SHELL
+environment variable set, as instmake needs to set it. instmake will
+check for this condition before starting. Note that the clearaudit audit
+plugin only works with GNU make; it does not work if you are using
+clearmake.
+
+When using the B<clearaudit> plugin, file input and output information
+is not recorded for any command that returns a non-zero value. This is
+due to a "feature" in the clearaudit program. Instmake can work around this
+"feature" with the B<full> option, but note that your builds
+will be 25% slower because instmake has to do more work to ensure that it
+gets file input and output information for all commands, even for those
+that return a non-zero value.
+
+When building under either of these options, the created files will no
+longer be simple view-private files. They will be derived objects. This
+is important to know in case you like to clean your view with
+an incantation like:
+
+    cleartool lsprivate -short -other | xargs rm -f
+
+The above incantation will not remove derived objects, with which your
+view is new full. You must add the '-do' option, like so:
+
+    cleartool lsprivate -short -do -other | xargs rm -f
+
+Additionally, if you save the output of make to a file, either through
+shell redirection or instmake's "-o" option, do not save the output of
+your build program to a ClearCase file while using the clearaudit
+plugin. Also do not save the instmake log (the "-L" option)
+to a ClearCase file while using the clearaudit plugin.
+Besides the performance penalty, the clearaudit command, invoked by
+instmake, will complain about writing to different versions of the log
+file if you have more than one make process (either through sub-makes
+or parallel makes). Just avoid the problem entirely by saving make and
+instmake logs to files outside the ClearCase view. This is good advice
+even when NOT using the clearaudit plugin.
+
+If audited commands write to the same file at the same time, clearaudit
+will complain about possible "intereference from another process." It will
+fail, thereby losing dependency information. In normal clearaudit mode,
+an audit failure cannot be distinguished from a command failure. However,
+if using the clearaudit,full option, instmake can distinguish the two
+scenarious. The "Audit OK" field for each command will be True or False,
+depending on whether the audit was successful or not. Therefore, if ther
+are "intereference" problems (race conditions!), you can search for
+audit failures with the grep report plugin:
+
+    instmake -s grep --auditok False
+
+The dependency information for these commands will be missing, but at
+least you will know that the audits failed and that you should look
+for race conditions for this command. Be sure to check the make log, also,
+to confirm that clearaudit is complaining about intereference.
+
+Normally, when using clearaudit, the temporary
+derived object files that are used to gather dependencies are removed by
+instmake after each command is run. They can be removed because the dependency
+information they contain has been gathered and written to the instmake log.
+If you wish to leave those derived object files in place, the "leave-do"
+option will do so. The files will be located in the CWD of the process that
+created them. All the derived object files will be named
+'instmake.clearaudit.DO.<PID>', where '<PID>' is the instmake PID
+of the process that created that derived object file.
+
+=item env
+
+Instead of using the -e option to record one or more environment
+variables, you can use the B<env> audit plugin to record all
+environment variables.
+
+
+=head1 SUB-INSTMAKE INTERFACE
+
+B<instmake> -c 'command' ...
+
+B<instmake> -r [--start user sys real] [--end user sys real] [--retval val] command ...
+
+This interface to instmake is not the interface that the user sees, that is, it is not
+the interface the users uses to start a build under instmake. This "sub-instmake interface"
+is the interface that build programs use to communicate to instmake, that is, when a build
+tool invokes an instmake as a descendent of the user's initial instmake, (thus the "sub" in
+"sub-instmake"), this interface is used.
+
+=item -c
+
+The '-c' option is the same option that most shell's provide for running a command.
+Since instmake configures make to call instmake as it's SHELL, make will invoke instmake
+with '-c', thinking that instmake is the bourne shell, bash, csh, etc. That is, make calls:
+
+ instmake -c 'command to run'
+
+instmake specifically allows more than one option after the -c, but neither make nor clearaudit
+seem to violate the standard of one argument after the -c.
+
+=item -r
+
+The '-r' option allows build tools to record arbitrary command records in the instmake log.
+instmake will not run this command, just store the information in the instmake log. This is
+useful if you modify your build tools to record extra-process information in the instmake log.
+
+=head1 ENVIRONMENT VARIABLES
+
+INSTMAKE_PATH can be used to provide a list of directories to search for
+plugins.
+
+Avoid making use of the INSTMAKE_SCRIPT, INSTMAKE_PID,
+INSTMAKE_LOG_FILE, INSTMAKE_AUDIT, INSTMAKE_RECORD_ENV,
+and INSTMAKE_OPEN_FDS environment variables.
+instmake makes use of these when it is instrumenting a build.
+When in doubt, don't write a program that writes to an environment
+variable starting with "INSTMAKE_".
+
+You can however read these environment variables. The most useful
+is INSTMAKE_SCRIPT; you can check it to see if your program is running
+under instmake, and your program can use it to call instmake. 
+
+If using the clearaudit plugin, avoid
+setting CLEARAUDIT_SHELL, as
+instmake needs to set it so clearaudit can function. Instmake will
+warn you if CLEARAUDIT_SHELL is set before it starts the build.
+
+Avoid resetting SHELL from within a makefile; instmake configures
+MAKEFLAGS such that SHELL points to instmake.
+
+Instmake exports a variable named MAKE_SHELL_PPID. This gives the PPID
+of the instmake process, which should be the Make process's PID. This
+is necessary in rare cases when the Make process needs to know its own
+PID and executes a command that usually checks the PPID. In that case,
+the command Make executes should first check for MAKE_SHELL_PPID.
+
+=head1 SUPPORT
+
+Please got to B<http://instmake.googlecode.com/> for help regarding instmake.

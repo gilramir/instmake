@@ -1,0 +1,605 @@
+Using instmake
+==============
+
+Introduction
+------------
+'instmake' creates an "instrumented" make; it records information about
+all jobs that make invokes during its run. You use 'instmake' to call
+the 'make' of your choice (i.e., 'instmake' wraps 'make'), but under the
+covers, 'instmake' sets an environment variable so that 'make' will call
+'instmake' every time 'make' runs a job. It is through this mechanism that
+'instmake' can record data for each job run by make.
+
+Usage
+-----
+By default, instmake stores its log in a file called ~/.instmake-log
+This can be overridden on the command-line with -L.
+
+To record make's information, invoke instmake with a make command-line, like:
+
+$ instmake make
+
+or
+
+$ instmake make -j4
+
+or
+
+$ nohup instmake make -j4 production.testall  &
+
+Of course, you can wrap any GNU 'make' you wish:
+
+$ instmake make
+$ instmake /router/bin/make
+
+
+If you want 'instmake' to redirect both stdout and stderr of 'make'
+for you, you can use the -o switch:
+
+$ instmake -o make.output make default
+
+The stdout and stderr of 'make default' will be written (not appended)
+to make.output. This option is useful if you're wrapping 'instmake'
+with another tool which itself prints reports to stdout/stderr
+(like 'se', in SEtoolkit).
+
+By default instmake will not overwrite a pre-existing instmake log.
+The --force option will cause instmake to overwrite pre-existing
+instmake log.
+
+The --vws and --logs options also influence the creation of log files.
+
+
+Reports
+-------
+You can run reports via the --stats (or -s) option:
+
+To show duplicate commands:
+
+$ instmake -s duplicate
+
+To use a non-default log file:
+
+$ instmake -L logfile --stats duplicate
+
+
+To sort the commands based on their run-time, use the 'duration'
+report. This report itself has options, which can be added after the
+'duration' keyword:
+
+$ instmake -s duration
+
+or
+
+$ instmake -s duration --user --descending
+
+If a report requires more than one log file, you can list the
+multiple log files with multiple -L flags. You can also denote the default
+log file with either -d or --default:
+
+$ instmake -L log1 -L log2 --stats some_report
+
+or:
+
+$ instmake -d -L another_log --stats some_report
+    Which compares the default log file against 'another_log'
+
+or:
+
+$ instmake -L first_log --default --stats some_report
+    Which compares 'first_log' against the default log file.
+
+The --help option shows the command-line options, as well as the
+various reports and *their* options.
+
+
+Data dump
+---------
+The 'instmake' log file is in a special, Python-only file format.
+It is easily read by Python programs, but not by programs written
+in other languages. You can dump the 'instmake' log as text via
+the --text option:
+
+$ instmake --text
+
+The --log-version option prints a string indicating the version of
+the log file (either the default log file or the log file chosen by
+the -L option). This is useful if you parse the output of --text, so
+that you can be sure to parse the output correctly.
+
+The --csv option will dump some of the data as comma-separated values.
+This is useful for importing the data into spreadsheet programs.
+It has been tested with Gnumeric, for instance. Only a subset of
+the data is exported this way, because some of the data doesn't make
+sense to look at from a spreadsheet. The first row in the exported
+CSV data contains column headers, so you know what you're looking at.
+
+
+Plugins
+=======
+Instmake provides a plugin mechanism to extend its functionality.
+Instmake uses three types of plugins, one for statistical reports,
+one to determine the tool used in a command-line, and another for
+providing a generic "print" method for an instmake-log record.
+Plugins are searched for in the following areas, in the following order:
+
+1. Directories mentioned in the INSTMAKE_PATH environment variable.
+The format of this environment is like $PATH ... a colon-separated list
+of directories.
+
+2. Your ~/.instmake-plugins directory.
+
+3. Directories mentioned in the -P option to instmake. You can use
+-P as many times as necessary:
+    $ instmake -P ~user1/plugins -s duration
+    $ instmake -P ~user1/plugins -P ~user2/more-plugins -s duration
+
+4. In the Reports directory of the instmake installation directory.
+These are the "standard" plugins that "ship" with instmake.
+
+
+Writing a Report Plugin
+=======================
+Put your python program in the Reports subdirectory, and name
+it report_*_.py, where "*" is your choice.
+
+Provide a usage() function which prints a help message.
+usage() must not call sys.exit(), as instmake needs to loop over
+all report plugins and print their usage statements.
+
+The plugin must provide a string called 'description'. It should
+be one line and provide a short description of the plugin. It is printed
+in the instmake usage statement (instmake --help).
+
+Provide a report() function, which accepts three arguments,
+a list of the names of log files, a list of arguments to the plugin,
+and a PluginManager object.
+
+Be sure to check the length of the log-file array, since instmake
+doesn't know how many log-files your plugin will accept. You can
+call sys.exit() from report(), as instmake will only call your plugin,
+and then exit.
+
+The list of arguments to the plugin are the arguments provided on the
+command-line by the user that come after the name of the plugin. For
+example, if the user invokes your report plugin via:
+
+$ instmake -L build1.imlog -s your_plugin -a 1 -b 2
+
+then every thing after "your_plugin", namely, ["-a", "1", "-b", "2"]
+is passed to your plugin as its arguments.
+
+Your plugin does not have to handle the "--help" option, as that
+is automatically handled by instmake. If instmake sees that your
+report plugin is being called with a "--help" option, your plugin's
+usage() function is called instead of your plugin's report() function.
+
+The PluginManger object is passed to your plugin so that you can
+in turn pass it to the LogFile class constructor, mentioned below.
+The LogFile class needs the PluginManager object so that it can
+use the ToolName plugins (also mentioned below).
+
+You can use the instmake_log module to read the log file, and
+to access the fields within each record.
+
+To read the log file, you instantiate a LogFile() object, then
+loop, calling the read_record() method, obtaining a LogRecord object
+each time. The constructor of LogFile needs 2 arguments: the name of
+the log file to open, and the PluginManager object that was passed
+to you from instmake. The read_record() method needs no parameters.
+
+    log = LogFile(log_file_name, plugin_manager)
+
+    while 1:
+        try:
+            rec = log.read_record()
+        except EOFError:
+            log.close()
+            break
+
+        # do something with 'rec'
+
+
+Each LogRecord object has the following variables:
+
+class LogRecord:
+    ppid = None                 # Parent Process ID
+    pid = None                  # Process ID
+    cwd = None                  # Current working directory
+    retval = None               # Return value of process
+    times_start = None          # Start TIMES
+    times_end = None            # End TIMES
+    diff_times = None           # (End - Start) TIMES
+    cmdline = None              # The command-line of the job run by instmake
+    cmdline_args = None         # The args in the command-line
+    make_target = None          # Make target, if available
+    makefile_filename = None    # Makefile of rule, if available
+    makefile_lineno = None      # Line number of rule, if available
+    tool = None                 # The tool mentioned in the command-line. See
+                                # info about ToolName plugins.
+
+    audit_ok = None             # True/False: did the audit plugin succeed in
+                                # auditing this command?
+    input_files = None          # Input files, if an appropriate audit
+                                # plugin was used.
+    output_files = None         # Output files, if an appropriate audit
+                                # plugin was used.
+
+    env_vars = None             # Recorded environment-variables hash table.
+    open_fds = None             # List of open file descriptors before
+                                # the command started.
+
+    make_vars = None            # Recorded make-variables hash table.
+    make_vars_origins = None    # A hash (variable, origin) showing the
+                                # $(origin) of each variable.
+
+
+They are initialized the None, so if some are missing (like make_target,
+makefile_filename, and makefile_lineno, if you don't use a special tool
+to gather that, or tool if you is an old instmake log version), the
+values will be None. For any field added after the first version of the
+instmake log, it is wise to check for None before using it. As seen above,
+fields after 'cmdline_args' were added avertion instmake log version 1.
+
+The times_start and times_end fields are n-member tuples. Older
+versions of instmake logs have 5 member tuples, while more recent
+version of instmake logs have only 3. You only need 3, the indices of
+which are provided via the following class variables:
+    USER_TIME SYS_TIME REAL_TIME
+
+The diff_times tuple has an additional time field,
+    CPU_TIME  (the sum of USER_TIME + SYS_TIME)
+
+Just note that CPU_TIME only exists in diff_times, not in in times_start
+and times_end. diff_times is the duration of the process; times_start and
+times_end are timestamps.
+
+Another convenience feature is the TimeIndex() method of the LogRecord
+class. If you pass it the string "USER", "SYS", "REAL", or "CPU", it
+will return the value of USER_TIME, SYS_TIME, REAL_TIME, or CPU_TIME.
+This turns out to be convenient for report plugins that allow the user
+to select which time to report, since the report plugin usually parses
+the command-line options before it has instantiated a LogRecord object.
+You can see it's usefulness in the following sample code:
+
+# Parse the CLI to see which time the users wants
+if cli_option == "--user":
+    time_field = "USER"
+elif cli_option == "--sys":
+    time_field = "SYS"
+elif cli_option == "--real":
+    time_field = "REAL"
+elif cli_option == "--cpu":
+    time_field = "CPU"
+
+# Initially we don't know the value of the index
+time_index = None
+
+while 1:
+    try:
+        rec = log.read_record()
+    except EOFError:
+        log.close()
+        break
+
+    # This is the first record we have read, so
+    # look up the value of the index for the time field
+    # that we're interested in.
+    if time_index == None:
+        time_index = rec.TimeIndex(time_field)
+
+    # And use it
+    time = rec.diff_times[time_index]
+
+
+
+Writing a ToolName plugin
+=========================
+Instmake has another group of plugins, called ToolName plugins, which
+know how to parse a command-line and determine which 'tool' was used in
+the command-line.  Normally the tool in a command-line is the first
+argument of the command-line, that is, it is the compiler, or the
+linker. For example, the following command-lines have the the following
+tools:
+
+CMDLINE: gcc -o hello.o -c ../hello.c
+TOOL: gcc
+
+CMDLINE: gld -o program a.o b.o
+TOOL: gld
+
+CMDLINE: echo Hello
+TOOL: echo
+
+ToolName plugins can modify that default behavior (extracting the first
+argument from the command-line as calling it the tool). This is useful
+for scripting languages that use interpretors. For example, the perl
+ToolName plugin tries to provide the name of the script as the tool,
+instead of the name of the perl interpretor:
+
+CMDLINE: perl create.pl > out
+TOOL: create.pl
+
+CMDLINE: /usr/bin/perl5 munge generated.c
+TOOL: munge
+
+CMDLINE: perl -e 'print "Hello.\\n";' >  hello.txt
+TOOL: perl
+
+Note that instmake stores the command-line of the job in the "cmdline"
+record of LogRecord. The "tool" is not determined during the running of
+the build, i.e., during the creation of the instmake log file. As the
+log file is read, instmake calls a ToolName plugin to determine the
+tool. It was done this way to make the overhead of instrumenting a
+build as small as possible; why do calculations during a build, when
+you're recording build times, when the calculation can be done later,
+when the log is being read?
+
+A ToolName plugin provides a register() function, which accepts only one
+argument, the ToolManager object. The register() function's purpose is
+to tell the ToolManager when the plugin should be called, i.e., which
+command-lines the plugin should process. The definition of ToolManager
+is in instmake_log.py. It provides 5 mechanisms for matching command-lines.
+Each registration mechanism accepts something to match, either a string or
+a compiled regular expression, and a callback function. The callback function
+is called when the ToolManager wants to call the plugin to parse a command-line
+to get a tool name. Each callback function has different arguments depending
+on its registration type. The 5 registration functions and callback-function
+argument lists are shown here:
+
+1. Match the first argument in the command-line to a string:
+
+    Register via: ToolManager.RegisterFirstArgumentMatch(string, callback)
+    Callback args: callback(first_arg, argv, cwd)
+
+2. Match the first argument in the command-line to a compiled regex:
+
+    Register via: ToolManager.RegisterFirstArgumentRegex(compiled_regex, callback)
+    Callback args: callback(first_arg, argv, cwd, match_object)
+
+3. Match the basename of the first argument in the command-line to a string:
+
+    Register via: ToolManager.RegisterFirstArgumentBasenameMatch(string, callback)
+    Callback args: callback(basename, first_arg, argv, cwd)
+
+4. Match the basename of first argument in the command-line to a compiled regex:
+
+    Register via: ToolManager.RegisterFirstArgumentBasenameRegex(compiled_regex, callback)
+    Callback args: callback(basename, first_arg, argv, cwd, match_object)
+
+3. Match the entire command-line to a regex:
+
+    Register via: ToolManager.RegisterCommandLineRegex(compiled_regex, callback)
+    Callback args: callback(argv, cwd, match_object)
+
+The callback function should return an array of arguments -- a new argv.
+The first member of the list should be the name of the tool as it sees it.
+If the tool decides it can't do anything with the command-line, then the
+same argv that was passed to it should be returned. Note that the new argv
+that the toolname plugin returns does not replace the command-line in the
+LogRecord; it's only used when determining the tool name. Once this new
+argv has stabilized and no toolname plugin can further modify it, then the
+first argument in that argv is used as the toolname.
+
+
+Writing a Print Plugin
+======================
+The plugin's filename must start with "print_".
+
+The plugin must provide a string called 'description'. It should
+be one line and provide a short description of the plugin. It is printed
+in the instmake usage statement (instmake --help).
+
+The plugin must provide a function called Print. Its prototype should be:
+
+def Print(self, fh=sys.stdout, indent=0, vspace=1)
+
+However, you can default 'vspace' to either 0 or 1.
+
+'self' is a pointer to an instmake_log.LogRecord instance.
+
+'fh' is the file handle to write to.
+
+'indent' is the indent level. Some reports print hierarchical trees of records.
+Each indent level is a sequential integer. The root nodes have indent == 0, their
+children have indent == 1, the grandchildren have indent == 2, etc.
+
+'vspace' is a binary flag; it denotes if the Print method should add vertical
+space after the record information has been printed. Normally a report will
+not override this value, and thus the default should make sense for your print
+plugin; if the print plugin produces a succinct 1-line record, then vertical
+space is not needed as default. If your print plugin produces a complicated multi-line
+output, then vertical space should be the default. The report will
+override 'vspace' if they really do want or really don't want vertical space.
+Thus, all print plugins should end with:
+
+    if vspace:
+        print >> fh
+
+
+Writing a CLI Plugin
+====================
+TBD
+
+Writing a filemap Plugin
+========================
+TBD
+
+Writing an Audit Plugin
+=======================
+The filename should begin with "audit_". It should have:
+
+ * description - a one-line string used during --help
+ * usage() - should print usage info, used during --help
+ * CheckCLI() - a function to parse the CLI arguments
+ * Auditor - a class to gather info during the build
+ * ParseData() - a function to parse the info during reporting
+
+CheckCLI(options):
+------------------
+An audit plugin is used during an instmake build by using this CLI:
+ -a plugin_name
+
+To pass options to the audit plugin, commas are used. For example,
+the clearaudit plugin has 2 options:
+ -a clearaudit
+ -a clearaudit,full
+ -a clearaudit,leave-do
+ -a clearaudit,full,leave-do
+
+The CheckCLI() function will be passed a list of options. That is,
+there will be no commas, just the arguments passed between the commas.
+The CheckCLI() function should announce a problem if there is an error
+in the options, and call sys.exit(1).
+
+If the options are fine. then CheckCLI() should return a string which
+records the options asked for by the user. The string should be as short
+as possible, as it will be passed from instmake process to instmake
+process via an environment variable.
+
+As CheckCLI() is the startup function for the audit plugin, it can also
+check other things. For example, the clearaudit plugin needs to
+ensure that a certain environment variable is not set. So it does this
+check during CheckCLI().
+
+Auditor
+-------
+This class is instantiated for each command run during a build. It should
+be as fast as possible. It's job is to tell instmake how to audit a command,
+and to return the audit data to instmake so it can be stored in a log.
+The audit data should be a string. It should not be a pickled object, unless
+you're very careful about versioning your classes, as an old instmake log
+might be used with a new version of your audit plugin.
+
+The Auditor class needs the following 3 methods:
+
+__init__(self, audit_options):
+    The audit_options are the string-encoded CLI arguments that your
+    CheckCLI() function returned to instmake.
+
+ExecArgs(self, cmdline, instmake_pid):
+    cmdline is a single string of the command that instmake is supposed
+    run. This could be a gcc, a make, a gld, etc. The instmake PID
+    is also provided in case your audit plugin needs to create a unique
+    filename. The instmake PID is unique for each instmake process.
+    This returns a tuple: (exec_proc, exec_args). These are the arguments
+    pass to an exec() call. The first argument in exec_args should be
+    exec_proci (in most situations). If the audit plugin does not
+    modify the command-line, ExecArgs can return None instead of a tuple.
+
+CommandFinished(self, cexit, cretval):
+    This is called immediately after the exec() of the audited-command
+    is finished and returns the audit data to instmake.  If the audit
+    plugin created temporary files, this its chance to remove those
+    files. This method also allows the auditor object to report a
+    different return value than what the the command returned. 'cexit' is
+    the exit value from os.waitpid() (which includes signal information),
+    while 'cretval' is the high byte of 'cexit'; i.e., just the return
+    value of the process.  CommandFinished will return tuple: (cretval,
+    audit_data) The audit_data should be a can be any Python object that can
+    be pickled. This will be stored, without modification, directly in the
+    instmake log file.
+
+ParseData(audit_data, log_record)
+---------------------------------
+This function is called when instmake reads the log file during reporting.
+It is passed the data that was returned by LogData. It is also passed
+the LogRecord object. Once ParseData() parses the data, it is free to
+modify the LogData object directly.
+
+We might want ParseData() to be called on demand, instead of being called
+for every LogRecord. For example, a simple report might not need your
+audit data, but a more complicated report might want it. The simple report
+would run faster w/o ParseData(). Currently there is no API for this as
+it would make the reports harder to write.
+
+Also, we might need to add a 3rd argument to ParseData() - the
+audit_options that were passed to Auditor, or even the options that
+were passed to CheckCLI(). Both are saved in the instmake log and could
+easily be added to ParseData if needed by a future audit plugin.
+
+
+Regarding the Implementation of the clearaudit plugin
+===================================================
+clearaudit is a ClearCase tool which allows you to run a process and
+collect all ClearCase file I/O information. The files that a process run
+under clearaudit creates are not normal view-private files --- they are
+so-called "derived objects."  By running "cleartool catcr" on any of the
+derived objects created under the umbrella of the clearaudit command,
+you will have the list of files read and files written.
+
+When used with the clearaudit plugin, instmake will run commands under
+clearaudit. For example, if instmake is to execute:
+
+    gcc -o a.o a.c
+
+under '-a clearaudit', instmake will actually run:
+
+    clearaudit -c ':> DO.temp ; gcc -o a.o a.c'
+
+What does ":> DO.temp" do? It causes /bin/sh to redirect *nothing* to
+a file called DO.temp; i.e., it's a way of "touch"ing DO.temp without
+starting a new process. After the command-separator (semicolon), the
+shell invokes the command that instmake was asked to run. Since this
+entire shell command, including both the ":>" and the "gcc" commands,
+is run under the "clearaudit" umbrella, all derived objects will contain
+all ClearCase file I/O information.  This is important because instmake
+needs to query a derived object, after the clearaudit process is finished,
+using "cleartool catcr", to get the file I/O information.  We don't have
+to know anything about the derived objects gcc created; instmake caused
+the creation of a temporary derived object ("DO.temp"), so instmake
+can run "cleartool catcr DO.temp" to get the file I/O information for
+the gcc command. Note: in reality the file name of "DO.temp" is more
+elaborate to ensure a unique filename for the derived object.
+
+This technique works well unless the command run under clearaudit fails,
+i.e., returns a non-zero value. Apparently, clearaudit is implemented
+as such:
+
+1. Clearaudit runs the command it was told to run.
+2. It somehow gets file I/O information from ClearCase
+3. It converts all output files found from step #2 to derived objects, which
+    contain the complete file I/O information set.
+
+But when the command that clearaudit runs _fails_, clearaudit stops
+at step #1.  It does not convert any of the output files to derived
+objects. Thus, for those commands that returned non-zero values, for
+the lack of derived objects, instmake cannot run "cleartool catcr",
+and thus instmake cannot get file I/O information.
+
+To work around that limitation, the clearaudit plugin has a "full" option,
+'-a clearaudit,full".  It goes through pains to make sure that the
+return value that clearaudit sees is always 0, even if the sub-command
+failed. It does this by storing the return value of the sub-command in
+a file for later retrieval, and then passing an always-true value to
+clearaudit. For example, if instmake is to execute:
+
+    gcc -o a.o a.c
+
+under '-a clearaudit,full', instmake will actually run:
+
+    clearaudit -c 'gcc -c a.o a.c ; echo $? > DO.temp'
+
+You see that in this example, the sub-command ("gcc") is run first,
+and then the temporary derived object is created secondly. However, the
+temporary derived object is not a simple zero-length file; it actually
+contains the return value from the gcc. The $? variable is shell syntax
+for "return value of the previous command". This echo of $? into the
+temporary derived object serves 3 purposes:
+
+    1. It gives instmake a derived object of a known-name to query for
+        file I/O information.
+
+    2. It saves the return value of gcc into a file so instmake can
+        retrieve it.
+
+    3. Barring underlying ClearCase I/O problems, the echo will always
+        succeed. Since it is the last command that will execute under
+        clearaudit, clearaudit will see a return value of 0 for the entire
+        shell process. Thus, clearaudit will convert all output files
+        to derived objects.
+
+This technique works, but in practice it is 25% slower than without
+the "full" option.
+
+

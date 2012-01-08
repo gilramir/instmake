@@ -1,0 +1,117 @@
+instmake - Instrumented Make
+
+Copyright (c) 2010 by Cisco Systems, Inc.
+
+Gilbert Ramirez <gilramir@cisco.com>, <gram@alumni.rice.edu>
+
+Introduction
+------------
+Instmake is a tool to instrument GNU Make; it records information about
+all jobs that Make invokes during its run. It produces a much richer
+build log than the normal output from GNU Make, giving you an insight
+into your build like never before.
+
+Instmake is both a wrapper around make, and a shell for Make to utilize
+when running commands. The extra information that instmake gathers
+is stored in a special binary log file that can then be analyzed with
+instmake reports.
+
+Instmake was developed within Cisco Systems, Inc., and was approved for
+release to open source via Cisco Open Source Licensing request #3557.
+
+
+Thanks
+------
+The original idea for instmake and how to plug into Make's "call stack"
+was that of Tim Magill <tim.magill@gmail.com>, who also came up with the
+idea of using ClearCase's clearaudit to record file I/O information per
+command. Thanks, Tim!
+
+
+Installation
+------------
+To build the man page, first run:
+
+    make
+
+Then, to install in the standard location, under /usr
+(/usr/bin, /usr/share/man, and under python's site-packages directory),
+run this:
+    python setup.py install
+
+or to override the location:
+    python setup.py install --prefix=/top/level
+
+
+Using instmake to instrument a build
+------------------------------------
+By default, instmake stores its log in a file called ~/.instmake-log
+This can be overridden on the command-line with -L.
+
+To record make's information, invoke instmake with a make command-line, like:
+
+$ instmake make
+
+or
+
+$ instmake make -j4
+
+or
+
+$ nohup instmake make -j4 all  &
+
+Of course, you can wrap any GNU 'make' you wish:
+
+$ instmake make
+$ instmake /usr/local/bin/make
+
+
+By default instmake will not overwrite a pre-existing instmake log.
+The --force option will cause instmake to overwrite pre-existing
+instmake log.
+
+There are many other options when running instmake; see the man page
+or 'instmake --help' for full details.
+
+
+Running Reports
+---------------
+You can run reports via the --stats (or -s) option:
+
+To show duplicate commands:
+
+$ instmake -s duplicate
+
+To use a non-default log file:
+
+$ instmake -L logfile --s duplicate
+
+Probably one of the most useful reports is the ptree report, especially
+when used with its -f option, to produce a full build log, arranged
+in a process tree format:
+
+$ instmake -s ptree -f
+
+There are many other instmake reports. See the man page or
+'instmake --help' for full details.
+
+
+Plugins
+-------
+Instmake provides a plugin mechanism to extend its functionality.
+Plugins are searched for in the following areas, in the following order:
+
+1. Directories mentioned in the INSTMAKE_PATH environment variable.
+The format of this environment is like $PATH ... a colon-separated list
+of directories.
+
+2. Your ~/.instmake-plugins directory.
+
+3. Directories mentioned in the -P option to instmake. You can use
+-P as many times as necessary:
+    $ instmake -P ~user1/plugins -s duration
+    $ instmake -P ~user1/plugins -P ~user2/more-plugins -s duration
+
+4. In the instmakeplugins directory of the instmake installation directory.
+These are the "standard" plugins that ship with instmake.
+

@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+# Copyright (c) 2010 by Cisco Systems, Inc.
+"""
+Record times and process data for processes run by make.
+
+When invoked by the user, instmake can be used to start a build
+or to run reports on existing instmake logs.
+
+When invoked by make, instmake can be used to run commands
+and record data, and can also be used to simply record data
+into the instmake log.
+"""
+
+import os
+import sys
+
+# Global vars
+LOG_FILE_ENV_VAR = "INSTMAKE_LOG_FILE"
+
+def main():
+    if os.environ.has_key(LOG_FILE_ENV_VAR):
+        import instmake_build
+        filename = os.environ[LOG_FILE_ENV_VAR]
+
+        # We must be a child instmake. But how were we called?
+        if len(sys.argv) == 1:
+
+            # Clearmake sends a command to the shell by piping it in
+            # instead of passing it on the command-line via '-c'.
+            # Check if there is input on stdin, but don't hang!
+            import select
+            (i_fds, o_fds, e_fds) = select.select([sys.stdin], [], [], 0.001)
+            if i_fds:
+                cmd = sys.stdin.readline()
+                if cmd[-1] == "\n":
+                    cmd = cmd[:-1]
+                rc = instmake_build.invoke_child(filename, ["-c", cmd])
+                sys.exit(rc)
+            else:
+                sys.exit("instmake: invoked by build, but without arguments.")
+
+        # Were we invoked to run a command?
+        if sys.argv[1] == "-c":
+            rc = instmake_build.invoke_child(filename, sys.argv[1:])
+            sys.exit(rc)
+
+        # Were we invoked to add a record to the log?
+        elif sys.argv[1] == "-r":
+            instmake_build.add_record(filename, sys.argv[2:])
+
+        # Is the build getting tricky and trying to run
+        # a known shell script via: $(SHELL) script?
+        # We can only assume so; try to run it.
+        else:
+            rc = instmake_build.invoke_child(filename, sys.argv[1:])
+            sys.exit(rc)
+
+    else:
+        # We're the first instmake
+        from instmakelib import instmake_cli
+        try:
+            # start_top will only return an integer if the instmake
+            # was a build.  For reports, other modes, it will return None.
+            # On errors, start_top will call sys.exit() directly
+            rc = instmake_cli.start_top(LOG_FILE_ENV_VAR)
+            if rc != None:
+                sys.exit(rc)
+        except IOError, e:
+            if e[1][1:] != 'roken pipe':
+                print e
+            sys.exit(1)
+
+        except:
+            raise
+
+
+
+if __name__ == '__main__':
+    main()
