@@ -19,7 +19,7 @@ LOG_FILE_ENV_VAR = "INSTMAKE_LOG_FILE"
 
 def main():
     if os.environ.has_key(LOG_FILE_ENV_VAR):
-        import instmake_build
+        from instmakelib import instmake_build
         filename = os.environ[LOG_FILE_ENV_VAR]
 
         # We must be a child instmake. But how were we called?
