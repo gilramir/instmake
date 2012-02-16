@@ -255,7 +255,7 @@ def invoke_child(log_file_name, cli_args):
     # Audit?
     auditor = None
     if os.environ.has_key(AUDIT_ENV_VAR):
-        from Import import rtimport
+        from instmakelib import rtimport
         i = os.environ[AUDIT_ENV_VAR].find(";")
         audit_plugin_name = os.environ[AUDIT_ENV_VAR][:i]
         audit_env_options = os.environ[AUDIT_ENV_VAR][i+1:]
