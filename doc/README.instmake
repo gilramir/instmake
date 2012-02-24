@@ -603,3 +603,10 @@ This technique works, but in practice it is 25% slower than without
 the "full" option.
 
 
+Running the unit tests
+======================
+$ ./unittest --verbose
+
+or to run on set of tests, give the name of the test class:
+
+$ ./unittest --verbose envTests
