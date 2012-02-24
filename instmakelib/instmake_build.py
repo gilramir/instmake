@@ -259,7 +259,7 @@ def invoke_child(log_file_name, cli_args):
         i = os.environ[AUDIT_ENV_VAR].find(";")
         audit_plugin_name = os.environ[AUDIT_ENV_VAR][:i]
         audit_env_options = os.environ[AUDIT_ENV_VAR][i+1:]
-        plugin_mod_name = "Reports." + AUDIT_PLUGIN_PREFIX + \
+        plugin_mod_name = "instmakeplugins." + AUDIT_PLUGIN_PREFIX + \
                 "_" + audit_plugin_name
         audit_plugin = rtimport.rtimport(plugin_mod_name)
         auditor = audit_plugin.Auditor(audit_env_options)
