@@ -500,12 +500,14 @@ CommandFinished(self, cexit, cretval):
     be pickled. This will be stored, without modification, directly in the
     instmake log file.
 
-ParseData(audit_data, log_record)
----------------------------------
+ParseData(audit_data, log_record, audit_env_options)
+----------------------------------------------------
 This function is called when instmake reads the log file during reporting.
 It is passed the data that was returned by LogData. It is also passed
-the LogRecord object. Once ParseData() parses the data, it is free to
-modify the LogData object directly.
+the LogRecord object, and the audit_env_options that CheckCLI() created
+when it processed any audit plugin CLI options.
+Once ParseData() parses the data, it is free to modify the LogData
+object directly.
 
 We might want ParseData() to be called on demand, instead of being called
 for every LogRecord. For example, a simple report might not need your

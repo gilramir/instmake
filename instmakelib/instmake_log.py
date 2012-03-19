@@ -33,6 +33,7 @@ INSTMAKE_VERSION_9 = VERSION_ROOT + "9"
 INSTMAKE_VERSION_10 = VERSION_ROOT + "10"
 INSTMAKE_VERSION_11 = VERSION_ROOT + "11"
 INSTMAKE_VERSION_12 = VERSION_ROOT + "12"
+INSTMAKE_VERSION_13 = VERSION_ROOT + "13"
 
 ORIGIN_NOT_RECORDED = "not-recorded"
 
@@ -76,7 +77,7 @@ def WriteLatestHeader(fd, log_file_name,
     they easily know what it is. This function will call sys.exit()
     on failure."""
     # 0 = dump as ASCII
-    header_text = pickle.dumps(INSTMAKE_VERSION_12, 0)
+    header_text = pickle.dumps(INSTMAKE_VERSION_13, 0)
 
     header = LogHeader1(audit_plugin_name, audit_env_options, audit_cli_options)
 
@@ -124,7 +125,16 @@ class LogRecord:
     REAL_TIME = None
     CPU_TIME = None
 
-    HAS_LOG_HEADER = 0
+    # Does this version of the instmake log have a file header (log header)?
+    HAS_LOG_HEADER = False
+
+    # Does this version of the instmake log allow variable types of
+    # audit plugins, not just clearaudit?
+    HAS_VARIABLE_AUDIT_PLUGINS = False
+
+    # Does this version of the instmake log have record classes that
+    # use the LogHeader in their init() ?
+    NEEDS_LOG_HEADER_IN_RECORD_INIT = False
 
     def TimeIndex(self, field):
         """Return the index used in the time array for a specified time,
@@ -376,7 +386,8 @@ class LogRecord_12(LogRecord_11):
     require a file header (LogHeader) so we know which
     audit plugin was used, if any."""
 
-    HAS_LOG_HEADER = 1
+    HAS_LOG_HEADER = True
+    HAS_VARIABLE_AUDIT_PLUGINS = True
     AUDIT_DATA = 10
 
     def __init__(self, array, audit_plugin):
@@ -385,6 +396,23 @@ class LogRecord_12(LogRecord_11):
         if audit_plugin:
             audit_data = array[self.AUDIT_DATA]
             audit_plugin.ParseData(audit_data, self)
+
+
+class LogRecord_13(LogRecord_12):
+    """The LogRecord init now needs log_hdr. We do this because
+    audit plugins now accept audit_options during ParseData(), and
+    we ge tthat from the log_hdr."""
+
+    NEEDS_LOG_HEADER_IN_RECORD_INIT = True
+
+    def __init__(self, array, audit_plugin, log_hdr):
+        # Call LogRecord_11, and skip LogRecord_12 so we can
+        # call ParseData the way we want to.
+        LogRecord_11.__init__(self, array)
+
+        if audit_plugin:
+            audit_data = array[self.AUDIT_DATA]
+            audit_plugin.ParseData(audit_data, self, log_hdr.audit_env_options)
 
 
 record_version_map = {
@@ -400,6 +428,7 @@ record_version_map = {
     INSTMAKE_VERSION_10 : LogRecord_10,
     INSTMAKE_VERSION_11 : LogRecord_11,
     INSTMAKE_VERSION_12 : LogRecord_12,
+    INSTMAKE_VERSION_13 : LogRecord_13,
 }
 
 # LogHeaders are versioned different from LogRecords
@@ -465,7 +494,7 @@ class LogFile:
             self.RecordClass = record_version_map[self.record_version]
         else:
             sys.exit("The file format is not supported: %s" % \
-                    (record_version,))
+                    (self.record_version,))
 
         if self.RecordClass.HAS_LOG_HEADER:
             self.hdr = self.read()
@@ -515,7 +544,10 @@ class LogFile:
 
     def read_record(self):
         array = self.read()
-        if self.hdr:
+
+        if self.RecordClass.NEEDS_LOG_HEADER_IN_RECORD_INIT:
+            return self.RecordClass(array, self.audit_plugin, self.hdr)
+        if self.RecordClass.HAS_VARIABLE_AUDIT_PLUGINS:
             return self.RecordClass(array, self.audit_plugin)
         else:
             return self.RecordClass(array)

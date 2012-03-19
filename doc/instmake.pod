@@ -524,6 +524,41 @@ Instead of using the -e option to record one or more environment
 variables, you can use the B<env> audit plugin to record all
 environment variables.
 
+=item strace
+
+The strace plugin runs all command, except for Make commands, under strace.
+It uses the strace output to determine the files that were read and written to
+during the execution of that command.
+
+The strace plugin has multiple options which control its behavior.
+
+=over
+
+=item strace=STRACE
+
+This specifies the strace binary to use, instead of the strace found via PATH.
+
+=item ext-logs
+
+This tells instmake to keep the strace logs in files external to the
+instmake log. For long builds, this is better than the default behavior
+of copying the strace log into the instmake log itself, as the size of
+the instmake log will be huge.
+
+=item leave-cmds
+
+While running each command via strace, instmake creates a "cmd" shell script
+which contains any environment variables and commands that need to be run.
+These are normally deleted after the run of the command, as instmake no
+longer needs them. But if you are debugging a problem with the strace
+plugin, it can be handy to leave these files on disk.
+
+=item work-dir=DIR
+
+This tells instmake where to store the strace output logs and the cmd-file
+shell scripts.
+
+=back
 
 =head1 SUB-INSTMAKE INTERFACE
 
