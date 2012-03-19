@@ -162,6 +162,13 @@ class Auditor:
                     os.unlink(self.cmd_file)
                 except OSError:
                     pass
+            else:
+                # We rename the cmd file to show the retval
+                status_file = self.cmd_file + "." + str(cretval)
+                try:
+                    os.rename(self.cmd_file, status_file)
+                except OSError:
+                    pass
 
             # If user has requested external logs, we store
             # the filename
@@ -272,7 +279,6 @@ def is_make_cmd(cmdline):
     tool_names = get_tool_names(cmdline)
 
     if None in tool_names:
-#        print >> sys.stderr, cmdline, " COULD NOT DETERMINE TOOLNAME"
         return False
 
     # check if any tool matches the MAKE_CMDS.
