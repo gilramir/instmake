@@ -1,6 +1,6 @@
 instmake - Instrumented Make
 
-Copyright (c) 2010 by Cisco Systems, Inc.
+Copyright (c) 2010-2012 by Cisco Systems, Inc.
 
 Gilbert Ramirez <gilramir@cisco.com>, <gram@alumni.rice.edu>
 
@@ -26,6 +26,9 @@ The original idea for instmake and how to plug into Make's "call stack"
 was that of Tim Magill <tim.magill@gmail.com>, who also came up with the
 idea of using ClearCase's clearaudit to record file I/O information per
 command. Thanks, Tim!
+
+Venkata Rajasekharu Athreyapurapu <rathreya@cisco.com> contributed
+the strace audit plugin.
 
 
 Installation
