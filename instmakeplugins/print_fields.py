@@ -39,8 +39,12 @@ def Print(self, fh=sys.stdout, indent=0, vspace=1):
             print >> fh, "INPUT FILE\t%s" % (ifile,)
 
     if self.output_files != None:
-        for ofile in self.input_files:
+        for ofile in self.output_files:
             print >> fh, "OUTPUT FILE\t%s" % (ofile,)
+
+    if self.output_files != None:
+        for xfile in self.execed_files:
+            print >> fh, "EXECED FILE\t%s" % (xfile,)
 
     # Environment variables
     if self.env_vars:

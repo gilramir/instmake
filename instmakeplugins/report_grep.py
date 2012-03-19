@@ -56,6 +56,9 @@ def return_retval(rec):
 def return_input(rec):
     return rec.input_files
 
+def return_execed(rec):
+    return rec.execed_files
+
 def return_output(rec):
     return rec.output_files
 
@@ -162,7 +165,7 @@ def usage():
     print "\t-v : Return records that DON'T match."
     print
     print "\tFIELD: --cmdline (default), --tool, --target, --cwd,"
-    print "\t\t--retval, --auditok, --inputs, --outputs, --pid"
+    print "\t\t--retval, --auditok, --inputs, --outputs, --execed, --pid"
 
 def report(log_file_names, args):
 
@@ -183,7 +186,7 @@ def report(log_file_names, args):
     # Our options
     optstring = "co:v"
     longopts = ["tool", "target", "cwd", "retval", "inputs", "outputs",
-        "cmdline", "pid", "auditok"]
+        "cmdline", "pid", "auditok", "execed"]
 
 
     try:
@@ -213,6 +216,9 @@ def report(log_file_names, args):
             search_type = SEARCH_ARRAY
         elif opt == "--inputs":
             search_helper = return_input
+            search_type = SEARCH_ARRAY
+        elif opt == "--execed":
+            search_helper = return_execed
             search_type = SEARCH_ARRAY
         elif opt == "--pid":
             search_helper = return_pid

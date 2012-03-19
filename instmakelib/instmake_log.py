@@ -109,8 +109,13 @@ class LogRecord:
 
     input_files = None          # Input files, if an appropriate audit
                                 # plugin was used.
+
     output_files = None         # Output files, if an appropriate audit
                                 # plugin was used.
+
+    execed_files = None         # Executed files, if an appropriate audit
+                                # plugin was used.
+
     audit_ok = None             # True/False: did the audit plugin succeed in
                                 # auditing this command?
 

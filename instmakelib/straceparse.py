@@ -64,9 +64,29 @@ class StraceOutput:
         self.syscalls       = self.__read()
         self.process_cwd    = { }
         self.ignore_files_read = []
+        self.ignore_files_written = []
+
+        # If the very first syscall is exeve of /bin/sh, then
+        # it was the sh of the cmd shell script; and we should
+        # ignore that. We don't want it to appear
+        # in our list of execed files.
+        if len(self.syscalls) > 0:
+            first_syscall = self.syscalls[0]
+            if isinstance(first_syscall, syscall.exec_family):
+                xname = first_syscall.get_file_execed()
+                if xname == "/bin/sh":
+                    self.syscalls = self.syscalls[1:]
+
+    def set_debug(self, new_value):
+        """Turn on or off debug mode in the syscall module.
+        Values should be True or False"""
+        syscall.debug_mode = new_value
 
     def remove_read(self, filename):
         self.ignore_files_read.append(filename)
+
+    def remove_written(self, filename):
+        self.ignore_files_written.append(filename)
 
     def __syscall_obj(self, line):
         """ parses the strace output line and returns a appropriate system call
@@ -181,10 +201,18 @@ class StraceOutput:
         return ret_syscalls
 
 
-
     def get_files_written(self):
-        """ files written in a strace output """
-        files_written = []
+        return self._get_files("get_file_written", self.ignore_files_written)
+
+    def get_files_read(self):
+        return self._get_files("get_file_read", self.ignore_files_read)
+
+    def get_files_execed(self):
+        return self._get_files("get_file_execed", [])
+
+    def _get_files(self, syscall_method_name, ignore_list):
+        """Generic handler for finding files in the strace output"""
+        files_result = []
         cwd = CWD()
 
         for syscall in self.syscalls:
@@ -200,56 +228,25 @@ class StraceOutput:
             if child_pid:
                 cwd.copy_cwd(syscall.pid, child_pid)
                 continue
-            
-            fname = syscall.get_file_written()
+
+            if hasattr(syscall, syscall_method_name):
+                syscall_method = getattr(syscall, syscall_method_name)
+            else:
+                continue
+
+            fname = syscall_method()
             if fname:
                 if os.path.isabs(fname):
                     abs_fname = fname
                 else:
                     abs_fname = os.path.join(cwd.get_cwd(syscall.pid), fname)
 
-                # Avoid duplicates, in case the file is written to
-                # multiple times ('zip' does this)
-                if not abs_fname in files_written:
-                    files_written.append(abs_fname)
-
-        if "/dev/tty" in files_written:
-            files_written.remove("/dev/tty")
-
-        return files_written
-
-
-    def get_files_read(self):
-        """ returns the files read in the strace output file """
-        files_read = []
-
-        cwd = CWD()
-
-        for syscall in self.syscalls:
-            # if the system call does chdir update the cwd info.
-            dir_name = syscall.get_chdir_name()
-            if dir_name:
-                cwd.update_cwd(syscall.pid, dir_name)
-                continue
-
-            # if the system call does fork/clone ..
-            child_pid = syscall.get_child_pid()
-            if child_pid:
-                cwd.copy_cwd(syscall.pid, child_pid)
-                continue
-            
-            fname = syscall.get_file_read()
-            if fname:
-                # get full path name using cwd
-                fname = os.path.join(cwd.get_cwd(syscall.pid), fname)
-
-                if not fname in self.ignore_files_read:
+                if not fname in ignore_list:
                     # Avoid duplicates
-                    if not fname in files_read:
-                        files_read.append(fname)
+                    if not abs_fname in files_result:
+                        files_result.append(abs_fname)
 
-
-        return files_read
+        return files_result
 
 
 

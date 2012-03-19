@@ -42,6 +42,10 @@ def Print(self, fh=sys.stdout, indent=0, vspace=1):
         label =      "%sOUTPUT FILES:  " % (spaces,)
         LOG.print_indented_list(fh, [label], self.output_files)
 
+    if self.execed_files != None:
+        label =      "%sEXECED FILES:  " % (spaces,)
+        LOG.print_indented_list(fh, [label], self.execed_files)
+
     # Environment variables
     if self.env_vars:
         labels = []

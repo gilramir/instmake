@@ -5,6 +5,10 @@ UNFINISHED = 'unfinished'
 RESUMED    = 'resumed'
 COMPLETED  = 'completed'
 
+# This can be set to turn on special debugging during
+# development. Useful if the audit_strace plugin wants to debug
+# only a particular log_record.pid
+debug_mode = False
 
 class InvalidSysCallInfo(Exception):
     pass
@@ -80,6 +84,9 @@ class SysCall:
         pass
 
     def get_file_written(self):
+        pass
+
+    def get_file_execed(self):
         pass
 
     def get_child_pid(self):
@@ -210,4 +217,30 @@ class link(rename):
     pass
 
 class symlink(rename):
+    pass
+
+class exec_family(SysCall):
+
+    def get_file_execed(self):
+        if debug_mode:
+            print "EXEC:", self.is_completed(), self.retval, "ARGS:", self.args
+
+        if not self.is_completed():
+            return None
+
+        if self.is_retval_negative():
+            # Really we care about ENOENT (-1), but we can check for
+            # any error
+            return None
+
+        if len(self.args) < 1:
+            return None
+
+        xname = self.args[0]
+        xname = xname.rstrip(' "')
+        xname = xname.lstrip(' "')
+        return xname
+
+class execve(exec_family):
+    # 29129 execve("/bin/hostname", ["/bin/hostname"], [/* 68 vars */]) = 0
     pass

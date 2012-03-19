@@ -220,23 +220,41 @@ class Auditor:
 def ParseData(audit_data, log_record, audit_env_options) :
     """Read the strace data."""
     if not audit_data:
-#        print >> sys.stderr, "No audit data"
+        log_record.audit_ok = False
         return
 
     (leave_temp, ext_logs,
             strace, temp_dir) = audit_env_options.split("|")
 
     (cmd_file, strace_op_data) = audit_data
-#    print >> sys.stderr, "ext_logs:", ext_logs, "cmd_file:", cmd_file, "strace_op_data:", strace_op_data
-    if ext_logs == EXTERNAL_LOGS:
-        strace_data = straceparse.StraceFile(strace_op_data)
-    else:
-        strace_data = straceparse.StraceOutput(strace_op_data)
+
+    try:
+        if ext_logs == EXTERNAL_LOGS:
+            strace_log = strace_op_data
+            strace_data = straceparse.StraceFile(strace_log)
+        else:
+            strace_data = straceparse.StraceOutput(strace_op_data)
+    except IOError:
+        log_record.audit_ok = False
+
+    log_record.audit_ok = True
 
     # Ignore the command-file
-    strace_data.remove_read(cmd_file)
+    strace_data.remove_read(cmd_file) 
+    strace_data.remove_read("/dev/tty")
+    strace_data.remove_written("/dev/tty")
+
+    # Left over code from debugging; useful to leave
+    # here in case we need to debug a particular syscall
+    # for a particular PID
+#    if log_record.pid == "220035.12336":
+#        strace_data.set_debug(True)
+#    else:
+#        strace_data.set_debug(False)
+
     log_record.input_files = strace_data.get_files_read()
     log_record.output_files = strace_data.get_files_written()
+    log_record.execed_files = strace_data.get_files_execed()
 
 
 
