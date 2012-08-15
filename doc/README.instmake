@@ -608,6 +608,7 @@ temporary derived object serves 3 purposes:
 This technique works, but in practice it is 25% slower than without
 the "full" option.
 
+
 Writing a Usage Logger Plugin
 =============================
 You can name the file anything you want, as it is directly
@@ -626,6 +627,18 @@ was performed.
 cmdline is the instmake command-line, as a string.
 
 mode is the type of action that instmake took: report, build, or other
+
+
+Writing a clidiff Path Normalizer Plugin
+========================================
+You can name the file anything you want, as it is directly
+referenced by the site config file.
+
+It must define this function:
+
+    def normalize_path(path)
+
+It must return a path; either the original, or a modified version.
 
 
 Running the unit tests
