@@ -7,6 +7,7 @@ import sys
 import os
 import getopt
 from instmakelib import instmake_cli
+from instmakelib import imlib
 from instmakelib import instmake_log as LOG
 from instmakelib import climanager
 from instmakelib import pysets
@@ -15,6 +16,8 @@ LOG_A = 0
 LOG_B = 1
 NAME_A = "build 1"
 NAME_B = "build 2"
+
+path_normalizer = None
 
 description = "Command-Line Diff"
 
@@ -109,6 +112,15 @@ def report(log_file_names, args):
     if args:
         usage()
         sys.exit(1)
+
+    # Path normalizer being used?
+    if imlib.config.has_key(jsonconfig.CLIDIFF_NORMPATH):
+        plugin_name = imlib.config[jsonconfig.CLIDIFF_NORMPATH]
+        try:
+            module = jsonconfig.load_site_plugin(plugin_name)
+            path_normalizer = module.normalize_path
+        except Exception, e:
+            sys.exit("Unable to import %s: %s" % (plugin_name, e))
 
     # We need exactly 1 or 2 log files, depending on '-p'
     if len(log_file_names) == 1:
@@ -250,6 +262,7 @@ class Build:
         # the command-line
         self.num_unique = 0
         self.num_multiple = 0
+
 
     def ReadLogForPIDs(self, pids):
         log = LOG.LogFile(self.filename)
@@ -502,6 +515,9 @@ class Build:
     def NormalizeDir(self, dir):
         """Given a dir, chop off the first part if the first
         part is the same as the build's initial directory."""
-       
-        return dir
+        
+        if path_normalizer:
+            return path_normalizer(dir)
+        else:
+            return dir
 

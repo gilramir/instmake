@@ -214,7 +214,7 @@ def run_report(report_name, printer_name, log_file_names, plugin_dirs,
     except KeyboardInterrupt:
         sys.exit("Instmake report interrupted by user.")
 
-def start_top(log_file_env_var, site_dir):
+def start_top(log_file_env_var, config, site_dir):
     """Starting the top-most instmake. Decide which major
     function to run: begin a new database, append to a database,
     or run statistics."""
@@ -247,6 +247,8 @@ def start_top(log_file_env_var, site_dir):
             "csv", "help",
         "force", "print", "vws=", "fd",
         "stop-cmd-contains=", "noinst", "logs="]
+
+    imlib.SetConfig(config)
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], optstring, longopts)

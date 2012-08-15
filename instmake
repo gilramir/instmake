@@ -18,7 +18,6 @@ import time
 # Global vars
 LOG_FILE_ENV_VAR = "INSTMAKE_LOG_FILE"
 CONFIG_FILE_NAME = "config.json"
-INSTMAKE_SITE_DIR = "instmakesite"
 
 def log_usage(config, start_time, end_time, rc, mode):
     from instmakelib import jsonconfig
@@ -31,12 +30,10 @@ def log_usage(config, start_time, end_time, rc, mode):
     else:
         log_rc = rc
 
-    from instmakelib import rtimport
-    plugin_name = INSTMAKE_SITE_DIR + "." + \
-        config[jsonconfig.CONFIG_USAGE_LOGGER]
+    plugin_name = config[jsonconfig.CONFIG_USAGE_LOGGER]
 
     try:
-        usage_logger = rtimport.rtimport(plugin_name)
+        usage_logger = jsonconfig.load_site_plugin(plugin_name)
     except Exception, e:
         print >> sys.stderr, e
     else:
@@ -110,7 +107,8 @@ def main():
             # start_top will only return an integer if the instmake
             # was a build.  For reports, other modes, it will return None.
             # On errors, start_top will call sys.exit() directly
-            mode, rc = instmake_cli.start_top(LOG_FILE_ENV_VAR, site_dir)
+            mode, rc = instmake_cli.start_top(LOG_FILE_ENV_VAR, config,
+                    site_dir)
             end_time = time.time()
 
             log_usage(config, start_time, end_time, rc, mode)

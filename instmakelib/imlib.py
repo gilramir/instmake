@@ -11,6 +11,8 @@ from instmakelib import instmake_log
 
 DEFAULT_LOG_FILE = "~/.instmake-log"
 
+# Global config dictionary (set to None before it is initialized)
+config = None
 
 def start_plugin_manager(plugin_dirs, plugin_prefixes):
 
@@ -33,11 +35,14 @@ def start_plugin_manager(plugin_dirs, plugin_prefixes):
                 env_vars, prefixes)
 
 
+def SetConfig(new_config):
+    global config
+    config = new_config
+
 
 def cmp_real_time_start(a, b):
     """cmp() function for comparing real start-time of LogRecords."""
     return cmp(a.times_start[a.REAL_TIME], b.times_start[b.REAL_TIME])
-
 
 
 def record_overlaps_records_in_time(rec, records):

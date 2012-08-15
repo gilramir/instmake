@@ -126,6 +126,10 @@ in that directory, and use it for site-specific customization. Values
 that can be configured are:
 
     usage-logger : name of plugin to use to log usage of instmake
+    clidiff-normpath: normalize path names in the clidiff report
 
 The 'instmakesite' package is added to the search path for plugins,
-so that site-specific plugins can be located there.
+so that site-specific plugins can be located there. The plugins
+that usage-logger, etc., point to, must be located there. Any
+other type of plugin (report, toolname, etc.) can be put there,
+and instmake will automatically find them.
