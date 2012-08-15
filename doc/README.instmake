@@ -222,8 +222,12 @@ class LogRecord:
                                 # auditing this command?
     input_files = None          # Input files, if an appropriate audit
                                 # plugin was used.
+    
     output_files = None         # Output files, if an appropriate audit
                                 # plugin was used.
+
+    execed_files = None         # Execed files, if using the strace audit
+                                # plugin
 
     env_vars = None             # Recorded environment-variables hash table.
     open_fds = None             # List of open file descriptors before

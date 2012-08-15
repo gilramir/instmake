@@ -30,10 +30,14 @@ def usage():
     print "\t--non-make [default]"
     print "\t--all"
     print "\t--only-make"
+    print "\t--execed  : Execed files, instead of tool names (needs strace audit)"
 
 NON_MAKE = 0
 ALL = 1
 ONLY_MAKE = 2
+
+JOBS_TOOLNAME = 0
+JOBS_EXECED = 1
 
 def report(log_file_names, args):
 
@@ -50,13 +54,15 @@ def report(log_file_names, args):
     sort_field = simplestats.SORT_BY_MAX
     wrap = 1
     record_type = NON_MAKE
+    job_type = JOBS_TOOLNAME
 
     # We have a slew of options
     optstring = "adrusc"
     longopts = ["ascending", "descending",
         "real", "user", "sys", "cpu",
         "non-make", "all", "only-make",
-        "tool", "total", "num", "min", "max", "mean", "pct", "no-wrap"]
+        "tool", "total", "num", "min", "max", "mean", "pct", "no-wrap",
+        "execed"]
 
     try:
         opts, args = getopt.getopt(args, optstring, longopts)
@@ -100,6 +106,8 @@ def report(log_file_names, args):
             record_type = ALL
         elif opt == "--only-make":
             record_type = ONLY_MAKE
+        elif opt == "--execed":
+            job_type = JOBS_EXECED
         else:
             assert 0, "%s option not handled." % (opt,)
 
@@ -149,10 +157,20 @@ def report(log_file_names, args):
         if time_index == None:
             time_index = rec.TimeIndex(time_field)
 
-        # Create an object for the tool if needed
-        tool = tools.setdefault(rec.tool, simplestats.Stat(rec.tool))
-        time = rec.diff_times[time_index]
-        tool.Add(time)
+        # Create an object for the tool and record the time
+        # If we are looking at toolnames, then use that. If we are
+        # not looking at execed files and we have some execed files,
+        # then use those, otherwise reverted to toolname.
+        if job_type == JOBS_TOOLNAME or rec.execed_files == None or \
+            len(rec.execed_files) == 0:
+            tool = tools.setdefault(rec.tool, simplestats.Stat(rec.tool))
+            time = rec.diff_times[time_index]
+            tool.Add(time)
+        else:
+            for toolname in rec.execed_files:
+                tool = tools.setdefault(toolname, simplestats.Stat(toolname))
+                time = rec.diff_times[time_index]
+                tool.Add(time)
 
     # Get the stats
     stats = tools.values()
@@ -231,13 +249,20 @@ def report(log_file_names, args):
     # Print the header
     print time_field, "TIME,",
     if record_type == ALL:
-        print "Make and Non-Make Records"
+        print "Make and Non-Make Records",
     elif record_type == NON_MAKE:
-        print "Non-Make Records"
+        print "Non-Make Records",
     elif record_type == ONLY_MAKE:
-        print "Only Make Records"
+        print "Only Make Records",
     else:
-        sys.exit("Unknown record_type %d." % (record_type,))
+        sys.exit("Unknown record_type %s." % (record_type,))
+
+    if job_type == JOBS_TOOLNAME:
+        print "Tools identified by CLI"
+    elif job_type == JOBS_EXECED:
+        print "Tools identified by audit plugin"
+    else:
+        sys.exit("Unknown job_type %s." % (job_type,))
 
     print sort_hdr,
     print """
