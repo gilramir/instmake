@@ -29,7 +29,7 @@ class Auditor:
     def CommandFinished(self, cexit, cretval):
         return cretval, os.environ
 
-def ParseData(audit_data, log_record):
+def ParseData(audit_data, log_record, audit_env_options):
     """Read the strace data."""
     if audit_data:
         for env_var, env_value in audit_data.items():

@@ -400,7 +400,7 @@ class LogRecord_12(LogRecord_11):
 
         if audit_plugin:
             audit_data = array[self.AUDIT_DATA]
-            audit_plugin.ParseData(audit_data, self)
+            audit_plugin.ParseData(audit_data, self, "")
 
 
 class LogRecord_13(LogRecord_12):

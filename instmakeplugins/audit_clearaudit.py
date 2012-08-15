@@ -231,7 +231,7 @@ class Auditor:
 
 
 
-def ParseData(audit_data, log_record):
+def ParseData(audit_data, log_record, audit_env_options):
     """Read the clearaudit data and modify the LogRecord's
     input_files and output_files."""
     if not audit_data:
