@@ -608,6 +608,25 @@ temporary derived object serves 3 purposes:
 This technique works, but in practice it is 25% slower than without
 the "full" option.
 
+Writing a Usage Logger Plugin
+=============================
+You can name the file anything you want, as it is directly
+referenced by the site config file.
+
+It must define this function:
+
+    def log_usage(start_time, end_time, rc, cmdline, mode)
+
+The times are decimal absolute times of when instmake started
+and finished.
+
+rc is the return code, which only has meaning if a build
+was performed.
+
+cmdline is the instmake command-line, as a string.
+
+mode is the type of action that instmake took: report, build, or other
+
 
 Running the unit tests
 ======================

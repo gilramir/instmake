@@ -118,3 +118,14 @@ of directories.
 4. In the instmakeplugins directory of the instmake installation directory.
 These are the "standard" plugins that ship with instmake.
 
+Site configuration
+------------------
+If you create an 'instmakesite' package directory that can be found
+and imported by instmake, then instmake will read a config.json file
+in that directory, and use it for site-specific customization. Values
+that can be configured are:
+
+    usage-logger : name of plugin to use to log usage of instmake
+
+The 'instmakesite' package is added to the search path for plugins,
+so that site-specific plugins can be located there.

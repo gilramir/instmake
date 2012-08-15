@@ -1,5 +1,5 @@
-#!/usr/bin/env python-2.7.1
-# Copyright (c) 2010 by Cisco Systems, Inc.
+#!/usr/bin/env python
+# Copyright (c) 2010-2012 by Cisco Systems, Inc.
 """
 Record times and process data for processes run by make.
 
@@ -13,9 +13,37 @@ into the instmake log.
 
 import os
 import sys
+import time
 
 # Global vars
 LOG_FILE_ENV_VAR = "INSTMAKE_LOG_FILE"
+CONFIG_FILE_NAME = "config.json"
+INSTMAKE_SITE_DIR = "instmakesite"
+
+def log_usage(config, start_time, end_time, rc, mode):
+    from instmakelib import jsonconfig
+
+    if not config.has_key(jsonconfig.CONFIG_USAGE_LOGGER):
+        return
+
+    if rc == None:
+        log_rc = 0
+    else:
+        log_rc = rc
+
+    from instmakelib import rtimport
+    plugin_name = INSTMAKE_SITE_DIR + "." + \
+        config[jsonconfig.CONFIG_USAGE_LOGGER]
+
+    try:
+        usage_logger = rtimport.rtimport(plugin_name)
+    except Exception, e:
+        print >> sys.stderr, e
+    else:
+        usage_logger.log_usage(start_time, end_time, log_rc,
+                ' '.join(sys.argv), mode)
+
+
 
 def main():
     if os.environ.has_key(LOG_FILE_ENV_VAR):
@@ -58,11 +86,34 @@ def main():
     else:
         # We're the first instmake
         from instmakelib import instmake_cli
+        from instmakelib import jsonconfig
+
+        # Read the config
+        config = {}
         try:
+            import instmakesite
+        except:
+            pass
+        else:
+            site_dir = os.path.dirname(instmakesite.__file__)
+            config_file = os.path.join(site_dir, CONFIG_FILE_NAME)
+
+            if os.path.exists(config_file):
+                try:
+                    jsonconfig.update(config, config_file)
+                except Exception, e:
+                    sys.exit(e)
+
+        try:
+            start_time = time.time()
             # start_top will only return an integer if the instmake
             # was a build.  For reports, other modes, it will return None.
             # On errors, start_top will call sys.exit() directly
-            rc = instmake_cli.start_top(LOG_FILE_ENV_VAR)
+            mode, rc = instmake_cli.start_top(LOG_FILE_ENV_VAR)
+            end_time = time.time()
+
+            log_usage(config, start_time, end_time, rc, mode)
+
             if rc != None:
                 sys.exit(rc)
         except IOError, e:

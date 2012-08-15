@@ -9,6 +9,17 @@ from instmakelib import instmake_build
 import os
 import cPickle as pickle
 
+
+# Major modes
+NO_MODE = -1
+STATS = "report"
+SHOW_LOG_VERSION = "show-log-version"
+SHOW_TEXT = "text"
+SHOW_CSV = "csv"
+BUILD = "build"
+HELP = "help"
+SHOW_LOG_HEADER = "show-log-header"
+
 # Global constants
 REPORT_PLUGIN_PREFIX = "report"
 PRINT_PLUGIN_PREFIX = "print"
@@ -208,16 +219,6 @@ def start_top(log_file_env_var):
     function to run: begin a new database, append to a database,
     or run statistics."""
 
-    # Major modes
-    NO_MODE = -1
-    STATS = 1
-    SHOW_LOG_VERSION = 2
-    SHOW_TEXT = 3
-    SHOW_CSV = 4
-    BUILD = 5
-    HELP = 6
-    SHOW_LOG_HEADER = 7
-
     log_file_name = None
     report_name = None
     log_file_names = []
@@ -414,9 +415,22 @@ def start_top(log_file_env_var):
     #########################
     # Finally, run something.
     if mode == STATS:
+        # Instmake recoreds are plain Python data types (lists, tuples,
+        # dictionaries, strings), but the LogHeader_1 that was added
+        # is a Python object, for which a class is neeeded. This was a
+        # mistake!
+        # In pre-open-source instmake logs, unpickle() will try to
+        # import 'instmake_log', but that won't work because in open-source
+        # instmake, 'instmake_log' has been moved to the instmakelib directory.
+        # To allow the open-source version of instmake to read instmake logs
+        # from before it was released to open source, we add the instmakelib
+        # directory to sys.path.
+        instmake_lib_path = os.path.dirname(__file__)
+        sys.path.append(instmake_lib_path)
+
         run_report(report_name, printer_name, log_file_names, plugin_dirs,
                 report_args, assumed_default_logfile)
-        return None
+        return mode, None
 
     elif mode == SHOW_TEXT:
         if len(log_file_names) != 1:
@@ -424,7 +438,7 @@ def start_top(log_file_env_var):
         # Just convert the pickle file to text
         start_plugins_for_reading(plugin_dirs)
         instmake_log.show_log(log_file_name)
-        return None
+        return mode, None
 
     elif mode == SHOW_CSV:
         if len(log_file_names) != 1:
@@ -448,7 +462,7 @@ def start_top(log_file_env_var):
         # Run the 'dump' report with the 'csv' printer
         run_report('dump', 'csv', log_file_names, plugin_dirs, [],
             assumed_default_logfile)
-        return None
+        return mode, None
 
     elif mode == SHOW_LOG_VERSION:
         if len(log_file_names) != 1:
@@ -456,7 +470,7 @@ def start_top(log_file_env_var):
         # Read the log, and report the version
         start_plugins_for_reading(plugin_dirs)
         instmake_log.show_log_version(log_file_name)
-        return None
+        return mode, None
 
     elif mode == SHOW_LOG_HEADER:
         if len(log_file_names) != 1:
@@ -464,7 +478,7 @@ def start_top(log_file_env_var):
         # Read the log, and report the header
         start_plugins_for_reading(plugin_dirs)
         instmake_log.show_log_header(log_file_name)
-        return None
+        return mode, None
 
     elif mode == BUILD:
         # Start a build
@@ -518,7 +532,7 @@ def start_top(log_file_env_var):
         # Run the job
         jobserver = instmake_build.InstmakeJobServer()
         rc = instmake_build.invoke_child(log_file_name, args)
-        return rc
+        return mode, rc
 
     else:
         sys.exit("Unexpected mode: %s" % (mode,))
