@@ -42,9 +42,9 @@ def CheckCLI(options):
     # via MAKEFLAGS; we do not want clearaudit to use SHELL, and thus
     # recursively call instmake. 
     if os.environ.has_key(CLEARAUDIT_SHELL_ENV_VAR):
-        print >> sys.stderr, "instmake -a=%s needs to set " \
+        print >> sys.stderr, "instmake -a=clearaudit needs to set " \
             "the %s environment variable." % \
-            (plugin_name, CLEARAUDIT_SHELL_ENV_VAR)
+            (CLEARAUDIT_SHELL_ENV_VAR,)
         print >> sys.stderr, "\tYou already have it set; please unset " \
             "it and run instmake again."
         sys.exit(1)

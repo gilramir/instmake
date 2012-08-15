@@ -23,7 +23,7 @@ class envTests(unittest.TestCase, base.TestBase):
         os.environ[MAGIC_COOKIE] = cls.magic_cookie
 
         cls.create_workspace("env")
-        cls.imlog, cls.makelog = cls.run_instmake_build(
+        cls.imlog, cls.makelog = cls.setup_run_instmake_build(
                 instmake_opts=["-a", "env"])
 
     def test_successful_build(self):

@@ -16,7 +16,7 @@ class simpleTests(unittest.TestCase, base.TestBase):
     def setUpClass(cls):
         """Set up the workspace and reference build for this test suite"""
         cls.create_workspace("simple")
-        cls.imlog, cls.makelog = cls.run_instmake_build()
+        cls.imlog, cls.makelog = cls.setup_run_instmake_build()
 
     def test_successful_build(self):
         """Looks for expected targets in the instmake log"""

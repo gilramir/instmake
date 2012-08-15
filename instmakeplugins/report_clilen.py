@@ -59,7 +59,7 @@ def report(log_file_names, args):
         if opt == "-a":
             sort_order = ASCENDING
         elif opt == "-d":
-            sort_order = DECENDING
+            sort_order = DESCENDING
         elif opt == "-n":
             sort_by = NUM
         elif opt == "-t":

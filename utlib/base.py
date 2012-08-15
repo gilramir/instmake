@@ -45,9 +45,37 @@ class TestBase:
         shutil.copytree(self.utfiles_dir, self.ws_build_dir)
 
     @classmethod
+    def setup_run_instmake_build(self, instmake_opts=None, make=DEFAULT_MAKE,
+            make_opts=None, log_prefix=None):
+        """Run an instmake build. This is meant to be run
+        in the setUpClass class method. It asserts on the success
+        of the builds, since the build needs to succeed for the
+        rest of the tests to work, which check the reports.
+        
+        Returns a tuple:
+            (instmake-log path, make-log path)
+        """
+
+        (retval, output, instmake_log, make_log) = \
+            self.run_instmake_build(instmake_opts, make,
+                    make_opts, log_prefix)
+
+        assert retval == util.SUCCESS, ' '.join(cmdv) + "\n" +  output
+
+        return instmake_log, make_log
+
+
+    @classmethod
     def run_instmake_build(self, instmake_opts=None, make=DEFAULT_MAKE,
-            make_opts=None):
-        """Run an instmake build"""
+            make_opts=None, log_prefix=None):
+        """Run an instmake build. Returns a tuple:
+            (retval, output, instmake-log path, make-log path)
+            
+            Although this is a classmethod, is meant to be run
+            from a TestCase instance. The idea is that multiple
+            tests in a TestCase would want to run a build.
+            You can differentiate them with log_prefix, to save
+            to differnet log files."""
 
         if instmake_opts == None:
             instmake_opts = []
@@ -55,22 +83,25 @@ class TestBase:
         if make_opts == None:
             make_opts = []
 
+        if log_prefix == None:
+            log_prefix = DEFAULT_LOG
+
         assert type(instmake_opts) == types.ListType, instmake_opts
         assert type(make) == types.StringType, make
         assert type(make_opts) == types.ListType, make_opts
         assert "-C" not in make_opts, "Already uses -C"
 
-        log_base = os.path.join(self.ws_dir, DEFAULT_LOG)
+        log_base = os.path.join(self.ws_dir, log_prefix)
 
         cmdv = [ INSTMAKE, "--logs", log_base ] + instmake_opts + \
                 [ make, "-C", self.ws_build_dir ] + make_opts
         
         # Run the instmake build
         (retval, output) = util.exec_cmdv(cmdv)
-        assert retval == util.SUCCESS, ' '.join(cmdv) + "\n" +  output
 
-        return log_base + IMLOG_SUFFIX, log_base + MKLOG_SUFFIX
-
+        return (retval, output, 
+            log_base + IMLOG_SUFFIX,
+            log_base + MKLOG_SUFFIX)
 
 
     def run_instmake_report(self, imlog, report, instmake_opts=None,
@@ -87,8 +118,6 @@ class TestBase:
         assert type(instmake_opts) == types.ListType, instmake_opts
         assert type(report) == types.StringType, report
         assert type(report_opts) == types.ListType, report_opts
-
-        log_base = os.path.join(self.ws_dir, DEFAULT_LOG)
 
         cmdv = [ INSTMAKE, "-L", imlog] + instmake_opts + \
                 [ "-s", report ] + report_opts

@@ -77,7 +77,16 @@ def main():
         # a known shell script via: $(SHELL) script?
         # We can only assume so; try to run it.
         else:
-            rc = instmake_build.invoke_child(filename, sys.argv[1:])
+            # We have to allow for the fact that the script we are
+            # running doesn't have execute permissions set.
+            # If $(SHELL) were /bin/sh, then /bin/sh doesn't
+            # care about execute permissions. The easiest way
+            # to do this is pretend that $(SHELL) indeed was /bin/sh
+            # and run /bin/sh directly. As this is the default SHELL
+            # in 'make' anyway, this is safe.
+            argv = sys.argv[1:]
+            argv.insert(0, "/bin/sh")
+            rc = instmake_build.invoke_child(filename, argv)
             sys.exit(rc)
 
     else:

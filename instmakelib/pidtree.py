@@ -233,7 +233,7 @@ class PIDTreeLight:
 	"""Given a PID, returns a list of the children PIDs of that PID.
 	The list may be empty, of course. Returns KeyError if the PID that
 	the user passes in is not in the tree."""
-	return self.child_pids[parent_ppid]
+	return self.child_pids[parent_pid]
 
     def PIDs(self):
         """Return the list of PIDs in the PIDTreeLight."""

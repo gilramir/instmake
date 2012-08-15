@@ -11,6 +11,7 @@ from instmakelib import imlib
 from instmakelib import instmake_log as LOG
 from instmakelib import climanager
 from instmakelib import pysets
+from instmakelib import jsonconfig
 
 LOG_A = 0
 LOG_B = 1
@@ -118,6 +119,7 @@ def report(log_file_names, args):
         plugin_name = imlib.config[jsonconfig.CLIDIFF_NORMPATH]
         try:
             module = jsonconfig.load_site_plugin(plugin_name)
+            global path_normalizer
             path_normalizer = module.normalize_path
         except Exception, e:
             sys.exit("Unable to import %s: %s" % (plugin_name, e))

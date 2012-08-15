@@ -516,7 +516,7 @@ class LogFile:
                         self.hdr.AuditPluginName())
             except ImportError, err:
                 sys.exit("Unable to import audit-plugin '%s':\n\t%s" % \
-                        (name, err))
+                        (self.hdr.AuditPluginName(), err))
         else:
             self.audit_plugin = None
 

@@ -3,6 +3,8 @@
 Parse Unix Shell syntax.
 """
 
+import sys
+
 class UnbalancedQuotes(Exception):
     pass
 
