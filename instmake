@@ -90,6 +90,7 @@ def main():
 
         # Read the config
         config = {}
+        site_dir = None
         try:
             import instmakesite
         except:
@@ -109,7 +110,7 @@ def main():
             # start_top will only return an integer if the instmake
             # was a build.  For reports, other modes, it will return None.
             # On errors, start_top will call sys.exit() directly
-            mode, rc = instmake_cli.start_top(LOG_FILE_ENV_VAR)
+            mode, rc = instmake_cli.start_top(LOG_FILE_ENV_VAR, site_dir)
             end_time = time.time()
 
             log_usage(config, start_time, end_time, rc, mode)

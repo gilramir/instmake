@@ -214,7 +214,7 @@ def run_report(report_name, printer_name, log_file_names, plugin_dirs,
     except KeyboardInterrupt:
         sys.exit("Instmake report interrupted by user.")
 
-def start_top(log_file_env_var):
+def start_top(log_file_env_var, site_dir):
     """Starting the top-most instmake. Decide which major
     function to run: begin a new database, append to a database,
     or run statistics."""
@@ -223,7 +223,10 @@ def start_top(log_file_env_var):
     report_name = None
     log_file_names = []
     make_output_file = None
-    plugin_dirs = []
+    if site_dir:
+        plugin_dirs = [site_dir]
+    else:
+        plugin_dirs = []
     force_logfile_overwrite = 0
     mode = NO_MODE
     printer_name = DEFAULT_PRINT_PLUGIN
