@@ -15,3 +15,6 @@ GROUP_NAME := "Instmake"
 		--release=$($*_VERSION) \
 		--center=$(GROUP_NAME) > $@
 
+.PHONY : clean
+clean :
+	rm -f $(MANPAGES)
