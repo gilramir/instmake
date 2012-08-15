@@ -1,4 +1,3 @@
-# Copyright (c) 2010 by Cisco Systems, Inc.
 """
 Use clearaudit to record file I/O when building in a ClearCase view.
 """
@@ -252,9 +251,14 @@ def ParseData(audit_data, log_record):
     else:
         log_record.audit_ok = False
 
+# derived object         /vob/foo/sys/YYY@@20-Nov.21:35.4364546 [new derived object]
 re_xname      =  re.compile(r"^[^/]+(?P<filename>/.*)@@\S+")
 re_xname_final = re.compile(r"^[^/]+(?P<filename>/.*)@@\S+$")
 
+# view file              /vob/foo/sys/xyz                                     <20-Nov-02.21:45:46>
+# view directory         /vob/foo/sys/DDD                                     <20-Nov-02.21:42:10> [created]
+# directory version      /vob/foo/.@@/main/13                                 <09-Oct-00.13:32:46>
+# version                /vob/foo/tools/rdefine@@/main/devbranch/6 <06-Aug-02.02:54:00>
 
 
 # If the filename ends in a space, were hosed. The clearcase audit report
@@ -291,6 +295,46 @@ def analyze_catcr(catcr, derived_object):
 
     input_files = []
     output_files = []
+
+    # The catcr data will have lines like:
+
+    # Target ClearAudit_Shell built by user.name
+    # Host "test-host" running SunOS 5.6 (sun4u)
+    # Reference Time 20-Nov-02.21:35:23, this audit started 20-Nov-02.21:35:23
+    # View was test-host:/vws/bos/gilramir-ccinstmake [uuid 04b5510b.f8d711d6.b76b.00:01:83:04:6e:01]
+    # Initial working directory was test-host:/vob/foo/sys
+    # ----------------------------
+    # MVFS objects:
+    # ----------------------------
+    # version                /vob/foo/tools/rdefine@@/main/devbranch/6 <06-Aug-02.02:54:00>
+    # directory version      /vob/foo/.@@/main/14                            <10-Oct-00.07:33:09>
+    # directory version      /vob/foo/sys@@/main/florida/6                   <28-Oct-02.10:47:12>
+    # directory version      /vob/foo/sys/merge@@/main/1                  <20-Nov-02.09:42:37>
+    # derived object         /vob/foo/sys/merge/mergeapi.g.c@@20-Nov.09:42.3260625 [referenced derived object]
+    # derived object         /vob/foo/sys/merge/mergeapi.g.h@@20-Nov.09:42.3260626 [referenced derived object]
+    # directory version      /vob/foo/.@@/main/13                                 <09-Oct-00.13:32:46>
+    # directory version      /vob/foo/sys@@/main/devbranch/6                        <20-Nov-02.21:34:58>
+    # derived object         /vob/foo/sys/XXX@@20-Nov.21:35.4364545 [new derived object]
+    # derived object         /vob/foo/sys/YYY@@20-Nov.21:35.4364546 [new derived object]
+    # derived object         /vob/foo/sys/required@@04-Feb.17:51.4754253
+    # symbolic link          /vob/foo/sys/merge -> ../../bar/sys/merge
+    # view symbolic link	 /vob/foo/sys/obj/shl_baz.a	      <10-Dec-02.14:40.48>
+    # view private object    /vob/foo/sys/LLL                                     <20-Nov-02.21:42:49> [created]
+    # derived object         /vob/foo/sys/lll@@20-Nov.21:42.4364549 [new derived object]
+    # view directory         /vob/foo/sys/DDD                                     <20-Nov-02.21:42:10> [created]
+    # derived object         /vob/foo/sys/ddd@@20-Nov.21:42.4364547 [new derived object]
+    # derived object         /vob/foo/sys/AAA@@20-Nov.21:45.4364552 [new derived object]
+    # view file              /vob/foo/sys/aaa                                     <20-Nov-02.21:45:46>
+
+    # 0. If "version", i.e., a clear-case versioned element, it's input.
+    # 1. Ignore "directory version", as we don't care about directory traversal.
+    # 2. If "derived object", check for "referenced derived object" or "new derived object". Yes,
+    #   if the DO is modified, it's still "new" because the timestamp is different.
+    # 3. If "symbolic link", ignore. (or use "-type fd" to ignore type 'l' ... links)
+    # 4. If "view private object", if "created" it's output, otherwise it's input.
+    # 5. If "view file" or "view symbolic link", it's input, because any output
+    #    under 'clearaudit' would have been a DO, not a "view" *anything*.
+    # 6. Ignore "view directory", as we don't care about directory traversal.
 
     STATE_IN_HEADER = 0
     STATE_LOOKING_FOR_LAST_HEADER_LINE = 1
