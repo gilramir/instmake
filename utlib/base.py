@@ -20,32 +20,32 @@ MKLOG_SUFFIX = ".make.out"
 
 class TestBase:
     @classmethod
-    def create_workspace(self, name):
+    def create_workspace(cls, name):
         """Create a workspace directory for a test class."""
         # Where the checked-in files for this unit-test are located
-        self.utfiles_dir = os.path.join(TOP_CWD, UTFILES, name)
+        cls.utfiles_dir = os.path.join(TOP_CWD, UTFILES, name)
 
         # The root dir of the temp workspace for this test suite
-        self.ws_dir = os.path.join(TEST_ROOT, name)
+        cls.ws_dir = os.path.join(TEST_ROOT, name)
 
         # The root dir of the temp workspace for this test suite
-        self.ws_build_dir = os.path.join(TEST_ROOT, name, BUILD_DIR)
+        cls.ws_build_dir = os.path.join(TEST_ROOT, name, BUILD_DIR)
 
         # Remove it if it exists
-        if os.path.exists(self.ws_dir):
-            if os.path.isdir(self.ws_dir):
-                shutil.rmtree(self.ws_dir)
+        if os.path.exists(cls.ws_dir):
+            if os.path.isdir(cls.ws_dir):
+                shutil.rmtree(cls.ws_dir)
             else:
-                os.remove(self.ws_dir)
+                os.remove(cls.ws_dir)
 
         # Make the directory
-        os.makedirs(self.ws_dir)
+        os.makedirs(cls.ws_dir)
 
         # Copy sources into the build dir
-        shutil.copytree(self.utfiles_dir, self.ws_build_dir)
+        shutil.copytree(cls.utfiles_dir, cls.ws_build_dir)
 
     @classmethod
-    def setup_run_instmake_build(self, instmake_opts=None, make=DEFAULT_MAKE,
+    def setup_run_instmake_build(cls, instmake_opts=None, make=DEFAULT_MAKE,
             make_opts=None, log_prefix=None):
         """Run an instmake build. This is meant to be run
         in the setUpClass class method. It asserts on the success
@@ -57,7 +57,7 @@ class TestBase:
         """
 
         (retval, output, instmake_log, make_log) = \
-            self.run_instmake_build(instmake_opts, make,
+            cls.run_instmake_build(instmake_opts, make,
                     make_opts, log_prefix)
 
         assert retval == util.SUCCESS, ' '.join(cmdv) + "\n" +  output
@@ -66,7 +66,7 @@ class TestBase:
 
 
     @classmethod
-    def run_instmake_build(self, instmake_opts=None, make=DEFAULT_MAKE,
+    def run_instmake_build(cls, instmake_opts=None, make=DEFAULT_MAKE,
             make_opts=None, log_prefix=None):
         """Run an instmake build. Returns a tuple:
             (retval, output, instmake-log path, make-log path)
@@ -91,10 +91,10 @@ class TestBase:
         assert type(make_opts) == types.ListType, make_opts
         assert "-C" not in make_opts, "Already uses -C"
 
-        log_base = os.path.join(self.ws_dir, log_prefix)
+        log_base = os.path.join(cls.ws_dir, log_prefix)
 
         cmdv = [ INSTMAKE, "--logs", log_base ] + instmake_opts + \
-                [ make, "-C", self.ws_build_dir ] + make_opts
+                [ make, "-C", cls.ws_build_dir ] + make_opts
         
         # Run the instmake build
         (retval, output) = util.exec_cmdv(cmdv)
