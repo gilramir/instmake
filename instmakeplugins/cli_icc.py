@@ -7,7 +7,6 @@ import os
 from instmakelib import clibase
 from instmakelib import instmake_log as LOG
 import re
-import sys
 
 description = "Analyze icc commands"
 

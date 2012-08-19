@@ -2,7 +2,6 @@
 """
 'grep'-like Print plugin.
 """
-from instmakelib import instmake_log as LOG
 import sys
 import os
 

@@ -111,8 +111,6 @@ def report(log_file_names, args):
     top_rec = conprocs.TopRecord()
     ovtime = top_rec.diff_times[top_rec.REAL_TIME]
 
-    results = conprocs.Results()
-
     # Find the total number of processes.
     unique_ids = {}
     for jobslot in range(conprocs.NumJobSlots()):

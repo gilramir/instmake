@@ -4,7 +4,6 @@ Timeline graph
 """
 import sys
 import os
-from instmakelib import instmake_log as LOG
 from instmakelib import pidtree
 from instmakelib import linearmap
 

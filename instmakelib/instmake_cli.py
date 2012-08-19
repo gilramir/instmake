@@ -7,7 +7,6 @@ from instmakelib import imlib
 from instmakelib import instmake_log
 from instmakelib import instmake_build
 import os
-import cPickle as pickle
 
 
 # Major modes
@@ -537,6 +536,7 @@ def start_top(log_file_env_var, config, site_dir):
         # Run the job
         jobserver = instmake_build.InstmakeJobServer()
         rc = instmake_build.invoke_child(log_file_name, args)
+        jobserver.Close()
         return mode, rc
 
     else:

@@ -5,7 +5,6 @@ Report times per tool, comparing the data from two instmake logs.
 
 import getopt
 import sys
-import re
 from instmakelib import instmake_log as LOG
 from instmakelib import simplestats
 from instmakelib import pysets
@@ -212,8 +211,6 @@ def read_log(log_name, time_field, show_field):
 
     tool_stats = {}
 
-    re_p4 = re.compile(r"c2\.95\.3\-p\d+\b")
-
     single_time_index = None
     real_time_index = None
     user_time_index = None
@@ -291,7 +288,6 @@ def read_log(log_name, time_field, show_field):
     return tool_stats, total_time
 
 def report_one(scomparisons, show_field, time_field, sort_by, WIDTH_TOOL):
-    tool_spaces = " " * WIDTH_TOOL
     tool_title = "TOOL" + " " * (WIDTH_TOOL - len("TOOL"))
     tool_dashes = "-" * WIDTH_TOOL
 

@@ -4,7 +4,6 @@ gld CLI plugin for instmake
 """
 
 import re
-import os
 import sys
 from instmakelib import clibase
 from instmakelib import instmake_log as LOG

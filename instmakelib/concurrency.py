@@ -155,7 +155,6 @@ class Concurrency:
                     self.jobslot_ids.append({})
 
                 for ID in item_ids:
-                    jids = self.jobslot_ids[jobslot]
                     self.jobslot_ids[jobslot][ID] = None
 
 

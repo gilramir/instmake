@@ -5,7 +5,6 @@ Increase -j factor
 
 import os
 import re
-import sys
 
 class JobServerNotAvailable(Exception):
     pass
@@ -89,7 +88,7 @@ class JobServerClient:
     def TakeTokens(self, numj=1):
         """Take one or more job tokens from pipe, possibly pending."""
         for i in range(numj):
-            bytes = self.TakeToken()
+            self.TakeToken()
 
 
 class GNUMakeClient(JobServerClient):

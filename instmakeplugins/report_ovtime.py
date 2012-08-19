@@ -3,7 +3,6 @@
 Report multiple makes in the same directory.
 """
 
-import sys
 from instmakelib import instmake_log as LOG
 
 description = "Over-all Build Time. Accepts multiple instmake logs."

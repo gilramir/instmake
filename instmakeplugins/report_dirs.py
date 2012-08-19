@@ -4,7 +4,6 @@ Report all dirs used in build.
 """
 
 import sys
-import os
 
 from instmakelib import instmake_log as LOG
 

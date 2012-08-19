@@ -6,7 +6,6 @@ from instmakelib import instmake_log as LOG
 import sys
 from instmakelib import pidtree
 import getopt
-import re
 
 description = "Create a PID-based tree of jobs."
 

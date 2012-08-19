@@ -45,6 +45,11 @@ class InstmakeJobServer(InstmakeJobServerClient):
         # Only one token
         self.PutToken()
 
+    def Close(self):
+        # noop, but it lets pyflakes know that the caller
+        # isn't insantiating the class for no reason
+        pass
+
 def initialize_environment(argv0, record_env_vars,
     record_open_fds, stop_cmd_contains, run_instrumentation,
     audit_env_options):

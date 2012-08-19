@@ -4,7 +4,6 @@ Common routines for instmake, instmake-graph, and any
 other instmake-related programs.
 """
 
-import re
 import os
 from instmakelib import pluginmanager
 from instmakelib import instmake_log

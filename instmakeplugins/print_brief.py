@@ -4,7 +4,6 @@ brief summary - PID, duration(real), CWD, part of cmdline
 """
 from instmakelib import instmake_log as LOG
 import sys
-import os
 
 description = "Very brief summary."
 

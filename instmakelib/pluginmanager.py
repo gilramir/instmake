@@ -40,7 +40,7 @@ class PluginName:
         elif self.suffix == ".py":
             mod = self.TextLoad()
         else:
-            mode = None
+            mod = None
 
         self.module = mod
         return self.module

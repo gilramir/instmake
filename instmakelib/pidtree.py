@@ -11,7 +11,6 @@ The PIDTreeLight is a light-weight class because it keeps track
 of PIDs only. It does not keep the instmake-log record in memory.
 """
 
-from instmakelib import instmake_log as LOG
 import sys
 
 class SortableRec:

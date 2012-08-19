@@ -3,8 +3,6 @@
 CLI Plugin Base Class
 """
 
-import sys
-import os
 import re
 from instmakelib import pysets
 from instmakelib import instmake_log as LOG

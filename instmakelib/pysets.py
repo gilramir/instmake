@@ -159,13 +159,13 @@ class SetClass:
         the item is not hash-able or is not in the set. """
         try:
             # Maybe the item can be used directly in a hash.
-            test = self.members[item]
+            self.members[item]
             return item
         except TypeError:
             # Or maybe the repr() of the item can be used in a hash.
             try:
                 repr_item = repr(item)
-                test = self.members[repr_item]
+                self.members[repr_item]
                 return repr_item
             except TypeError:
                 return None

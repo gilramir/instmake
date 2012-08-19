@@ -234,6 +234,7 @@ class LinearMap:
 
         current_chunks = []
         chunk_str = None
+        old_boundary_id = 0
         for boundary_id in boundary_ids:
             if self.print_diff:
                 # Print chunk size for previous chunk

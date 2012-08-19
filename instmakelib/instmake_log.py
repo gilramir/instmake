@@ -7,7 +7,6 @@ from __future__ import nested_scopes
 import cPickle as pickle
 import sys
 import os
-import re
 import gzip
 import socket
 from instmakelib import instmake_toolnames

@@ -49,9 +49,9 @@ def report(log_file_names, args):
 
     for opt, arg in opts:
         if opt == "-s" or opt == "--start":
-            job_type = JOB_START
+            sort_type = JOB_START
         elif opt == "-e" or opt == "--end":
-            job_type = JOB_END
+            sort_type = JOB_END
         elif opt == "--min":
             try:
                 min_threshhold = float(arg)
@@ -69,7 +69,7 @@ def report(log_file_names, args):
     records = []
     ppids = {}
 
-    # DEfine the function that will help us sort records.
+    # Define the function that will help us sort records.
     if sort_type == JOB_START:
         sort_func = lambda rec1, rec2: \
                         cmp(rec1[START], rec2[START])

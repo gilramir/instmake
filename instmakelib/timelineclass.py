@@ -140,7 +140,6 @@ class Timeline:
 
         C_START = 0
         C_FINISH = 1
-        C_PID = 2
 
         # List of lists; each item-list is a list of PIDs
         grouped_chunks = []

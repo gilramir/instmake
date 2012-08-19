@@ -2,9 +2,7 @@
 """
 Print plugin to show $@ and tool.
 """
-from instmakelib import instmake_log as LOG
 import sys
-import os
 
 description = "One-line summary showing $@, if available, and TOOL"
 

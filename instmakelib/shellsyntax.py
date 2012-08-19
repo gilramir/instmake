@@ -135,7 +135,6 @@ def remove_trailing_comment(cmdline):
     STATE_BACKTICK = 3
     STATE_ESCAPE = 4
 
-    new_cmdline = ""
     states = []
     state = STATE_NORMAL
     num_chars_to_copy = 0

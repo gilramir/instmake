@@ -4,7 +4,6 @@ Concatenate multiple logs into one new log.
 """
 import getopt
 import sys
-import re
 import os
 import cPickle as pickle
 from instmakelib import instmake_log as LOG

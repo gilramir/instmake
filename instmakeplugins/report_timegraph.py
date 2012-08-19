@@ -4,10 +4,8 @@ Timeline graph
 """
 import sys
 import getopt
-from instmakelib import pidtree
 from instmakelib import timegraph
 from instmakelib import instmake_log as LOG
-import os
 
 description = "Create an ASCII-art graph of process timeline."
 

@@ -99,14 +99,14 @@ def report(log_file_names, args):
                         arg)
             except ImportError, err:
                 sys.exit("unable to import %s-plugin '%s':\n\t%s" % \
-                        (instmake_cli.FILEMAP_PLUGIN_PREFIX, arg))
+                        (instmake_cli.FILEMAP_PLUGIN_PREFIX, arg, err))
         elif opt == "--map2":
             try:
                 map2 = plugins.LoadPlugin( instmake_cli.FILEMAP_PLUGIN_PREFIX,
                         arg)
             except ImportError, err:
                 sys.exit("unable to import %s-plugin '%s':\n\t%s" % \
-                        (instmake_cli.FILEMAP_PLUGIN_PREFIX, arg))
+                        (instmake_cli.FILEMAP_PLUGIN_PREFIX, arg, err))
         else:
             sys.exit("Unhandled option %s" % (opt,))
 
