@@ -9,6 +9,7 @@ import os
 import unittest
 
 # Import each unit test module
+from utlib.ut_appinst import appinstTests
 from utlib.ut_env import envTests
 from utlib.ut_simple import simpleTests
 from utlib.ut_shell import shellTests

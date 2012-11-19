@@ -60,7 +60,7 @@ class TestBase:
             cls.run_instmake_build(instmake_opts, make,
                     make_opts, log_prefix)
 
-        assert retval == util.SUCCESS, ' '.join(cmdv) + "\n" +  output
+        assert retval == util.SUCCESS, output
 
         return instmake_log, make_log
 

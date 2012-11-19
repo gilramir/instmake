@@ -1,4 +1,4 @@
-# Copyright (c) 2010 by Cisco Systems, Inc.
+# Copyright (c) 2010-2012 by Cisco Systems, Inc.
 """
 Routines for the "build" portion of instmake; i.e., when instmake
 is running a build an recording instrumentation data.
@@ -8,6 +8,9 @@ import os
 import time
 import cPickle as pickle
 import signal
+import tempfile
+import json
+
 from instmakelib import jobserver
 
 # Global constants
@@ -34,6 +37,10 @@ OPTIONS_ENV_VAR = "INSTMAKE_OPTIONS"
 # Binary switch values. Each option letter must be unique, but can
 # have any arbitrary value.
 OPTION_OPEN_FDS = "F"
+
+# Environment variable for the instrumented command
+# to write its own additional fields
+APP_INST_ENV_VAR = "INSTMAKE_APP_INST_FILE"
 
 class InstmakeJobServerClient(jobserver.JobServerClient):
     env_var = "INSTMAKE_JS_FLAGS"
@@ -127,7 +134,8 @@ def fdwrite(fd, text):
 
 
 def write_record(log_file_name, ppid, pid, cretval, times1, times2,
-    command_line, audit_data, makefile_filenm, makefile_lineno):
+    command_line, audit_data, makefile_filenm, makefile_lineno,
+    app_inst_filename):
     """Write a record to the instmake log, using data passed to us, and
     other data we can find by ourself."""
 
@@ -187,11 +195,26 @@ def write_record(log_file_name, ppid, pid, cretval, times1, times2,
             else:
                 env_var_vals[env_var] = None
 
+    # Read any extra instrumention data
+    app_inst = None
+    if app_inst_filename != None:
+        try:
+            app_inst_fh = open(app_inst_filename)
+            try:
+                text = app_inst_fh.read()
+                app_inst = json.loads(text)
+            except (IOError, ValueError):
+                pass
+            app_inst_fh.close()
+        except IOError:
+            pass
+
     # This is the record we'll save
     data = (ppid, pid, cwd, cretval, times1, times2,
             command_line, make_target, makefile_filenm,
             makefile_lineno, audit_data,
-            env_var_vals, open_fds, make_vars)
+            env_var_vals, open_fds, make_vars,
+            app_inst)
 
     data_text = pickle.dumps(data, 1) # 1 = dump as binary
 
@@ -257,6 +280,11 @@ def invoke_child(log_file_name, cli_args):
     # This instmake's PID.
     pid = make_pid()
 
+    # An extra instrumentation file that the instrumented
+    # tool can write to.
+    (app_inst_fd, app_inst_filename) = \
+            tempfile.mkstemp(prefix="instmake." + pid + ".")
+
     # Audit?
     auditor = None
     if os.environ.has_key(AUDIT_ENV_VAR):
@@ -296,6 +324,7 @@ def invoke_child(log_file_name, cli_args):
         # Change the PID info in the environment
         os.environ[PID_ENV_VAR] = pid
         os.environ[MAKE_SHELL_PPID_ENV_VAR] = str(os.getppid())
+        os.environ[APP_INST_ENV_VAR] = app_inst_filename
 
         # Record start time
         times1 = times()
@@ -348,7 +377,19 @@ def invoke_child(log_file_name, cli_args):
 
     # Save the data to the log.
     write_record(log_file_name, ppid, pid, cretval,
-        new_times1, new_times2, recorded_args, audit_data, None, None)
+        new_times1, new_times2, recorded_args, audit_data, None, None,
+        app_inst_filename)
+
+    # Get rid of the extra-instrumentation file handle and file
+    try:
+        os.close(app_inst_fd)
+    except OSError:
+        pass
+
+    try:
+        os.remove(app_inst_filename)
+    except OSError:
+        pass
 
     # Is there a stop condition which matches this command?
     if os.environ.has_key(STOP_CMD_CONTAINS_ENV_VAR):
@@ -369,6 +410,7 @@ def add_record(log_file_name, args):
     cmdline = ""
     makefile_filenm = None
     makefile_lineno = None
+    app_inst_filename = None
 
     # Get the PPID from the environment, as
     # a previous instmake would have set it.
@@ -379,7 +421,8 @@ def add_record(log_file_name, args):
 
     def usage():
         sys.exit("instmake -r [--start user sys real] [--end user sys real]\n" \
-            "[--filename name] [--lineno num] [--retval val] cmd ...")
+            "[--filename name] [--lineno num] [--retval val]\n" \
+            "[--extra-inst file] cmd ...")
 
     try:
         i = 0
@@ -400,6 +443,9 @@ def add_record(log_file_name, args):
                 i += 1
             elif arg == "--lineno":
                 makefile_lineno = int(args[i+1])
+                i += 1
+            elif arg == "--extra-inst":
+                app_inst_filename = int(args[i+1])
                 i += 1
             else:
                 cmdline = args[i:]
@@ -426,7 +472,7 @@ def add_record(log_file_name, args):
         times2 = times1
 
     write_record(log_file_name, ppid, pid, retval, times1, times2, cmdline,
-        None, makefile_filenm, makefile_lineno)
+        None, makefile_filenm, makefile_lineno, app_inst_filename)
 
     # Return the child-process's return value.
     sys.exit(retval)

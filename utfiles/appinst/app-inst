@@ -1,0 +1,24 @@
+#!/bin/bash
+# Copyright (c) 2012 by Cisco Systems, Inc.
+
+ARGUMENT="$1"
+
+# Just some logging for the make log, in case this fails
+echo INSTMAKE_APP_INST_FILE is "${INSTMAKE_APP_INST_FILE}"
+echo Before:
+ls -l "${INSTMAKE_APP_INST_FILE}"
+
+echo "{" > "${INSTMAKE_APP_INST_FILE}"
+echo '"number" : 130,' >> "${INSTMAKE_APP_INST_FILE}"
+
+# This puts ARGUMENT as the value as the string
+echo '"string" : "'"${ARGUMENT}"'",' >> "${INSTMAKE_APP_INST_FILE}"
+echo '"list" : ["a", "b", "c"],' >> "${INSTMAKE_APP_INST_FILE}"
+echo '"dict" : {"a" : 1, "b" : 2, "c" : 3}' >> "${INSTMAKE_APP_INST_FILE}"
+echo "}" >> "${INSTMAKE_APP_INST_FILE}"
+
+# Just some logging for the make log, in case this fails
+echo After:
+ls -l "${INSTMAKE_APP_INST_FILE}"
+
+echo

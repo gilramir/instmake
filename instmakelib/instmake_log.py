@@ -33,6 +33,7 @@ INSTMAKE_VERSION_10 = VERSION_ROOT + "10"
 INSTMAKE_VERSION_11 = VERSION_ROOT + "11"
 INSTMAKE_VERSION_12 = VERSION_ROOT + "12"
 INSTMAKE_VERSION_13 = VERSION_ROOT + "13"
+INSTMAKE_VERSION_14 = VERSION_ROOT + "14"
 
 ORIGIN_NOT_RECORDED = "not-recorded"
 
@@ -76,7 +77,7 @@ def WriteLatestHeader(fd, log_file_name,
     they easily know what it is. This function will call sys.exit()
     on failure."""
     # 0 = dump as ASCII
-    header_text = pickle.dumps(INSTMAKE_VERSION_13, 0)
+    header_text = pickle.dumps(INSTMAKE_VERSION_14, 0)
 
     header = LogHeader1(audit_plugin_name, audit_env_options, audit_cli_options)
 
@@ -123,6 +124,13 @@ class LogRecord:
                                 # command started.
     make_vars = None            # Recorded make-variables hash table.
     make_var_origins = None     # Origins of make vars
+
+    app_inst = None             # Application-specific instrumentation fields
+                                # For instmake logs prior to 14, or for
+                                # corrupt or missing app-inst data, this is
+                                # None. Otherwise, it's a dictionary, which
+                                # could be empty, if the app wrote an
+                                # empty json dictionary.
 
     USER_TIME = None
     SYS_TIME = None
@@ -418,6 +426,18 @@ class LogRecord_13(LogRecord_12):
             audit_data = array[self.AUDIT_DATA]
             audit_plugin.ParseData(audit_data, self, log_hdr.audit_env_options)
 
+class LogRecord_14(LogRecord_13):
+    """Add app_inst dictionary."""
+
+    APP_INST = 14
+
+    def __init__(self, array, audit_plugin, log_hdr):
+        # Call LogRecord_11, and skip LogRecord_12 so we can
+        # call ParseData the way we want to.
+        LogRecord_13.__init__(self, array, audit_plugin, log_hdr)
+
+        self.app_inst = array[self.APP_INST]
+
 
 record_version_map = {
     INSTMAKE_VERSION_1 : LogRecord_1,
@@ -433,6 +453,7 @@ record_version_map = {
     INSTMAKE_VERSION_11 : LogRecord_11,
     INSTMAKE_VERSION_12 : LogRecord_12,
     INSTMAKE_VERSION_13 : LogRecord_13,
+    INSTMAKE_VERSION_14 : LogRecord_14,
 }
 
 # LogHeaders are versioned different from LogRecords

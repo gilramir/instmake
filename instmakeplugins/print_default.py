@@ -93,6 +93,20 @@ def Print(self, fh=sys.stdout, indent=0, vspace=1):
 
         LOG.print_indented_list(fh, labels, values)
 
+    # App-inst fields
+    if self.app_inst != None:
+        labels = []
+        values = []
+        var_names = self.app_inst.keys()
+        var_names.sort()
+
+        for var_name in var_names:
+            label = "%s'%s': " % (spaces, var_name)
+            labels.append(label)
+            values.append(self.app_inst[var_name])
+
+        LOG.print_indented_list(fh, labels, values)
+
     print >> fh, "%sCMDLINE:       " % (spaces,), self.cmdline
 
 
