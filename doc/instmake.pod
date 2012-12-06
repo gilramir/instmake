@@ -589,6 +589,29 @@ The '-r' option allows build tools to record arbitrary command records in the in
 instmake will not run this command, just store the information in the instmake log. This is
 useful if you modify your build tools to record extra-process information in the instmake log.
 
+=head1 APPLICATION INSTRUMENTATION INTERFACE
+
+INSTMAKE_APP_INST_FILE is set for every invocation of a command
+under instmake. The tool that is run can write a JSON file at
+this file name, with arbitrary fields in it. Those fields will be
+stored in the instmake log along with the rest of the regular fields.
+
+For example, you could modify a tool to read /proc/self/statm on Linux,
+and copy some of the memory information to a JSON file. If it wrote:
+
+{
+  "data" : 534,
+  "resident" : 655,
+  "share" : 202,
+  "size" : 14081,
+  "text" : 37
+}
+
+to the file named by the INSTMAKE_APP_INST_FILE environment variable,
+then those fields will be stored in the instmake log. They will appear
+in any instmake report that shows the full recorde, like "ptree -f".
+
+
 =head1 ENVIRONMENT VARIABLES
 
 INSTMAKE_PATH can be used to provide a list of directories to search for
@@ -618,6 +641,7 @@ of the instmake process, which should be the Make process's PID. This
 is necessary in rare cases when the Make process needs to know its own
 PID and executes a command that usually checks the PPID. In that case,
 the command Make executes should first check for MAKE_SHELL_PPID.
+
 
 =head1 SUPPORT
 
