@@ -7,6 +7,12 @@ import sys
 
 description = "Print all fields in multi-line format."
 
+def PrintHeader():
+    pass
+
+def PrintFooter():
+    pass
+
 def Print(self, fh=sys.stdout, indent=0, vspace=1):
     spaces = "  " * indent
     print >> fh, "%sPID:           " % (spaces,), self.pid

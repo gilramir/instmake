@@ -7,6 +7,12 @@ import os
 
 description = "One-line summary in 'grep -n'-like format."
 
+def PrintHeader():
+    pass
+
+def PrintFooter():
+    pass
+
 def Print(self, fh=sys.stdout, indent=0, vspace=0):
     spaces = "  " * indent
 

@@ -6,6 +6,12 @@ import sys
 
 description = "Print selected fields as comma-separated values."
 
+def PrintHeader():
+    pass
+
+def PrintFooter():
+    pass
+
 def Print(self, fh=sys.stdout, indent=0, vspace=0):
 
     if self.make_target == None:

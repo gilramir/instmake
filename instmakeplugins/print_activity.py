@@ -6,6 +6,12 @@ import sys
 
 description = "One-line summary showing $@, if available, and TOOL"
 
+def PrintHeader():
+    pass
+
+def PrintFooter():
+    pass
+
 def Print(self, fh=sys.stdout, indent=0, vspace=0):
     spaces = "  " * indent
 

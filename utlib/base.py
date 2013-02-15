@@ -3,6 +3,7 @@
 import os
 import shutil
 import types
+import json
 
 from utlib import util
 
@@ -125,3 +126,20 @@ class TestBase:
         # Run the instmake build
         (retval, output) = util.exec_cmdv(cmdv)
         return retval, output
+
+    def get_instmake_records(self, imlog):
+        """Run a 'dump' report with the JSON print plugin,
+        and convert those JSON dictionaries to Python dictionaries."""
+
+        (retval, output) = self.run_instmake_report(imlog, "dump",
+                ["-p" "json"])
+
+        if retval != util.SUCCESS:
+            return (retval, output)
+
+        try:
+            records = json.loads(output)
+        except Exception, e:
+            return (None, e)
+
+        return (retval, records)

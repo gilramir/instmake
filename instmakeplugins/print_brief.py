@@ -7,6 +7,12 @@ import sys
 
 description = "Very brief summary."
 
+def PrintHeader():
+    pass
+
+def PrintFooter():
+    pass
+
 def Print(self, fh=sys.stdout, indent=0, vspace=0):
     spaces = "  " * indent
 

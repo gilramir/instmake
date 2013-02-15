@@ -5,7 +5,13 @@ Default Print plugin.
 from instmakelib import instmake_log as LOG
 import sys
 
-description = "Print all fields in a simple multi-line format"
+description = "Print all fields in a tab-delimited multi-line format"
+
+def PrintHeader():
+    pass
+
+def PrintFooter():
+    pass
 
 def Print(self, fh=sys.stdout, indent=0, vspace=1):
     print >> fh, "PID\t%s" % (self.pid,)

@@ -185,7 +185,11 @@ def run_report(report_name, printer_name, log_file_names, plugin_dirs,
     except ImportError, err:
         sys.exit("Unable to import print-plugin '%s':\n\t%s" % (printer_name, err))
 
-    if not printer:
+    # Let the print plugin print a header; in the future, the pring plugin
+    # should change to be a class
+    if printer:
+        printer.PrintHeader()
+    else:
         sys.exit("No such print-plugin: %s" % (printer_name,))
 
     instmake_log.SetPrinterPlugin(printer)
@@ -212,6 +216,9 @@ def run_report(report_name, printer_name, log_file_names, plugin_dirs,
         mod.report(log_file_names, report_args)
     except KeyboardInterrupt:
         sys.exit("Instmake report interrupted by user.")
+
+    # Let the print plugin print a header
+    printer.PrintFooter()
 
 def start_top(log_file_env_var, config, site_dir):
     """Starting the top-most instmake. Decide which major
