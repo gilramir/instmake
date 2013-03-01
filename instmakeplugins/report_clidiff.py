@@ -115,8 +115,8 @@ def report(log_file_names, args):
         sys.exit(1)
 
     # Path normalizer being used?
-    if imlib.config.has_key(jsonconfig.CLIDIFF_NORMPATH):
-        plugin_name = imlib.config[jsonconfig.CLIDIFF_NORMPATH]
+    if imlib.config.has_key(jsonconfig.CONFIG_CLIDIFF_NORMPATH):
+        plugin_name = imlib.config[jsonconfig.CONFIG_CLIDIFF_NORMPATH]
         try:
             module = jsonconfig.load_site_plugin(plugin_name)
             global path_normalizer
