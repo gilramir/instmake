@@ -65,6 +65,11 @@ class CLIManager:
             if cmdline_args[-1] == ";":
                 cmdline_args = cmdline_args[:-1]
 
+        # make-3.81 will put a trailing backslash ("\\n") in the cmdline,
+        # which shows up as \n; remove it
+        while "\n" in cmdline_args:
+            cmdline_args.remove("\n")
+
         # Check tool regexes
         for (regex, cb) in self.tool_regexes:
             if rec.tool != None and regex.search(rec.tool):
