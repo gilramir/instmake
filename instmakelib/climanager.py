@@ -57,18 +57,36 @@ class CLIManager:
         log record."""
         cmdline_args = shellsyntax.split_shell_cmdline(rec.cmdline)
 
-        # We need to be able to handle "segmented" command-lines
+        # XXX - We need to be able to handle "segmented" command-lines
         # (using &&, ||, ;, and the redirection symbols). But we don't
         # have a full-blown shell-cmdline parser. For now, we can help
         # the cli plugins if we tidy things up a bit.
         if cmdline_args:
+            # Look for a word that stars with `, like `gcc.....  ...`
+            for i, arg in enumerate(cmdline_args):
+                if len(arg) > 1 and arg[0] == "`":
+                    cmdline_args = cmdline_args[:i]
+
+
+            if ";" in cmdline_args:
+                i = cmdline_args.index(";")
+                cmdline_args = cmdline_args[:i]
+
+            if "||" in cmdline_args:
+                i = cmdline_args.index("||")
+                cmdline_args = cmdline_args[:i]
+
+            if "&&" in cmdline_args:
+                i = cmdline_args.index("&&")
+                cmdline_args = cmdline_args[:i]
+
+            # Trailing semicolon attached to a word
             if cmdline_args[-1] == ";":
                 cmdline_args = cmdline_args[:-1]
 
         # make-3.81 will put a trailing backslash ("\\n") in the cmdline,
         # which shows up as \n; remove it
-        while "\n" in cmdline_args:
-            cmdline_args.remove("\n")
+        cmdline_args = filter(lambda x: x != "\n", cmdline_args)
 
         # Check tool regexes
         for (regex, cb) in self.tool_regexes:
