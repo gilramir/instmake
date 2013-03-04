@@ -62,6 +62,7 @@ class GLD(clibase.CLIPluginBase):
         valid_toggle_flags = [
             "-Bdynamic",
             "--cref",
+            "--cisco-single-segment",   # cisco specific
             "--dynamic-linker",     # ??? toggle?
             "--emit-relocs",
             "-export-dynamic",
