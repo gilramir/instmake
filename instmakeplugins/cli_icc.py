@@ -99,6 +99,7 @@ class ICC(clibase.CLIPluginBase):
         valid_toggle_flags = [
             "-c",
             "-dynamic-runtime-data-init",
+            "-g",
             "-multiline-strings",
             "-nostdinc",
             "-pipe",
