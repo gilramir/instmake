@@ -133,6 +133,7 @@ class GCC(clibase.CLIPluginBase):
             "-g",
             "-gcoff",
             "-gstabs+",
+            "-idrop-leading-space",
             "-isimplify-pathnames",     # Cisco gcc
             "-E",
             "-EB",
