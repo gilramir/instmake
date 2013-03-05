@@ -62,6 +62,10 @@ class CLIManager:
         # have a full-blown shell-cmdline parser. For now, we can help
         # the cli plugins if we tidy things up a bit.
         if cmdline_args:
+            # Remove any prefixed new-lines, which can come in from
+            # make-3.81
+            cmdline_args = [a.lstrip("\n") for a in cmdline_args]
+
             # Look for a word that stars with `, like `gcc.....  ...`
             for i, arg in enumerate(cmdline_args):
                 if len(arg) > 1 and arg[0] == "`":
@@ -84,9 +88,10 @@ class CLIManager:
             if cmdline_args[-1] == ";":
                 cmdline_args = cmdline_args[:-1]
 
-        # make-3.81 will put a trailing backslash ("\\n") in the cmdline,
-        # which shows up as \n; remove it
-        cmdline_args = filter(lambda x: x != "\n", cmdline_args)
+            # make-3.81 will put a trailing backslash ("\\n") in the cmdline,
+            # which shows up as \n; after the previous filter, it will now
+            # be an empty string, so remove that here.
+            cmdline_args = filter(lambda x: x != "", cmdline_args)
 
         # Check tool regexes
         for (regex, cb) in self.tool_regexes:
