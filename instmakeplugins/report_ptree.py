@@ -28,8 +28,9 @@ def print_srec(srec, indent):
         spaces = "  " * indent
         children_srecs.sort()
         rec.Print(sys.stdout, indent, 0)
-        print "%sNUM. CHILDREN: " % (spaces,), len(children_srecs)
-        print
+        # XXX this must be handled in the print plugin
+#        print "%sNUM. CHILDREN: " % (spaces,), len(children_srecs)
+#        print
 
         for child_srec in children_srecs:
             print_srec(child_srec, indent + 1)
@@ -82,12 +83,18 @@ def report(log_file_names, args):
 
     for opt, arg in opts:
         if opt == "--full" or opt == "-f":
+            if output_type != OUTPUT_SUMMARY:
+                sys.exit("Only one output type allowed")
             show_entire_record = 1
             output_type = OUTPUT_FULL
         elif opt == "--make" or opt == "-m":
+            if output_type != OUTPUT_SUMMARY:
+                sys.exit("Only one output type allowed")
             only_makes = 1
             output_type = OUTPUT_MAKE
         elif opt == "--make-targets":
+            if output_type != OUTPUT_SUMMARY:
+                sys.exit("Only one output type allowed")
             only_makes = 1
             output_type = OUTPUT_MAKE_TARGETS
         else:
@@ -136,7 +143,7 @@ def report(log_file_names, args):
         elif output_type == OUTPUT_MAKE_TARGETS:
             print_make_targets(srec, 0)
         else:
-            assert 0
+            assert 0, "Unexpected output_type: " + output_type
 
 
     else:
