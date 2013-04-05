@@ -1,2 +1,2 @@
 # Copyright (c) 2010-2013 by Cisco Systems, Inc.
-__version__ = "1.1.1"
+__version__ = "1.1.2"
