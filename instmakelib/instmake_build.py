@@ -267,6 +267,7 @@ def invoke_child(log_file_name, cli_args):
     # a better estimate of the time used in the child
     # process.
     times = os.times
+    get_wall_clock = time.time
     wait = os.wait
     execvp = os.execvp
     fork = os.fork
@@ -328,6 +329,7 @@ def invoke_child(log_file_name, cli_args):
 
         # Record start time
         times1 = times()
+        wall_clock_1 = get_wall_clock()
         # Run the job
         cpid = fork()
         if cpid:
@@ -345,6 +347,7 @@ def invoke_child(log_file_name, cli_args):
                 cexit = 0x0200
             # Record end time
             times2 = times()
+            wall_clock_2 = get_wall_clock()
         else:
             try:
                 execvp(exec_proc_name, exec_proc_args)
@@ -356,6 +359,8 @@ def invoke_child(log_file_name, cli_args):
         recorded_args = []
         times1 = times()
         times2 = times1
+        wall_clock_1 = get_wall_clock()
+        wall_clock_2 = wall_clock_1
         cexit = 0
 
     # Convert the exit-value to a return-value by ignoring the signal
@@ -372,8 +377,8 @@ def invoke_child(log_file_name, cli_args):
     #   CHILD_USER_TIME = 2
     #   CHILD_SYS_TIME = 3
     #   ELAPSED_REAL_TIME = 4
-    new_times1 = (times1[2], times1[3], times1[4])
-    new_times2 = (times2[2], times2[3], times2[4])
+    new_times1 = (times1[2], times1[3], wall_clock_1)
+    new_times2 = (times2[2], times2[3], wall_clock_2)
 
     # Save the data to the log.
     write_record(log_file_name, ppid, pid, cretval,
@@ -461,12 +466,13 @@ def add_record(log_file_name, args):
 
     if times1 == None:
         sys_times1 = os.times()
+        wall_clock_1 = time.time()
         # Here are the meanings of the magic numbers, which I hard-code instead
         # of using variables for speed.
         #   CHILD_USER_TIME = 2
         #   CHILD_SYS_TIME = 3
         #   ELAPSED_REAL_TIME = 4
-        times1 = (sys_times1[2], sys_times1[3], sys_times1[4])
+        times1 = (sys_times1[2], sys_times1[3], wall_clock_1)
 
     if times2 == None:
         times2 = times1

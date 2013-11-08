@@ -34,6 +34,9 @@ INSTMAKE_VERSION_11 = VERSION_ROOT + "11"
 INSTMAKE_VERSION_12 = VERSION_ROOT + "12"
 INSTMAKE_VERSION_13 = VERSION_ROOT + "13"
 INSTMAKE_VERSION_14 = VERSION_ROOT + "14"
+INSTMAKE_VERSION_15 = VERSION_ROOT + "15"
+
+LATEST_VERSION = INSTMAKE_VERSION_15
 
 ORIGIN_NOT_RECORDED = "not-recorded"
 
@@ -77,7 +80,7 @@ def WriteLatestHeader(fd, log_file_name,
     they easily know what it is. This function will call sys.exit()
     on failure."""
     # 0 = dump as ASCII
-    header_text = pickle.dumps(INSTMAKE_VERSION_14, 0)
+    header_text = pickle.dumps(LATEST_VERSION, 0)
 
     header = LogHeader1(audit_plugin_name, audit_env_options, audit_cli_options)
 
@@ -147,6 +150,12 @@ class LogRecord:
     # Does this version of the instmake log have record classes that
     # use the LogHeader in their init() ?
     NEEDS_LOG_HEADER_IN_RECORD_INIT = False
+
+    # Does the "real time" indicate clock time? Prior to version 15
+    # of the log file, it did not, as the OS could use any arbitrary
+    # point in time as the epoch. In version 15 of the log, we use
+    # a system call that uses the traditional Jan 1, 1970 as the epoch.
+    REAL_TIME_IS_CLOCK_TIME = False
 
     def TimeIndex(self, field):
         """Return the index used in the time array for a specified time,
@@ -439,6 +448,16 @@ class LogRecord_14(LogRecord_13):
         self.app_inst = array[self.APP_INST]
 
 
+class LogRecord_15(LogRecord_14):
+    # No change in the record layout, but a change in the
+    # semantics of REAL_TIME, to reflect an actual timestamp,
+    # rather than seconds since an arbitrary point in time. See:
+    # http://linux.die.net/man/2/times
+    # and search for "arbitrary point in the past"
+
+    REAL_TIME_IS_CLOCK_TIME = True
+
+
 record_version_map = {
     INSTMAKE_VERSION_1 : LogRecord_1,
     INSTMAKE_VERSION_2 : LogRecord_2,
@@ -454,9 +473,10 @@ record_version_map = {
     INSTMAKE_VERSION_12 : LogRecord_12,
     INSTMAKE_VERSION_13 : LogRecord_13,
     INSTMAKE_VERSION_14 : LogRecord_14,
+    INSTMAKE_VERSION_15 : LogRecord_15,
 }
 
-# LogHeaders are versioned different from LogRecords
+# LogHeaders are versioned differently from LogRecords
 class LogHeader1:
     def __init__(self, audit_name, audit_env_options, audit_cli_options):
         self.audit_plugin_name = audit_name

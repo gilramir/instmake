@@ -4,6 +4,7 @@ Default Print plugin.
 """
 from instmakelib import instmake_log as LOG
 import sys
+import time
 
 description = "Print all fields in multi-line format."
 
@@ -25,8 +26,13 @@ def Print(self, fh=sys.stdout, indent=0, vspace=1):
     print >> fh, "%sDURATION/user: " % (spaces,), LOG.hms(self.diff_times[self.USER_TIME])
     print >> fh, "%sDURATION/sys:  " % (spaces,), LOG.hms(self.diff_times[self.SYS_TIME])
     print >> fh, "%sDURATION/cpu:  " % (spaces,), LOG.hms(self.diff_times[self.CPU_TIME])
-    print >> fh, "%sREAL/start:    " % (spaces,), self.times_start[self.REAL_TIME]
-    print >> fh, "%sREAL/end:      " % (spaces,), self.times_end[self.REAL_TIME]
+
+    if self.REAL_TIME_IS_CLOCK_TIME:
+        print >> fh, "%sREAL/start:    " % (spaces,), self.times_start[self.REAL_TIME], "(", time.ctime(self.times_start[self.REAL_TIME]), ")"
+        print >> fh, "%sREAL/end:      " % (spaces,), self.times_end[self.REAL_TIME], "(", time.ctime(self.times_end[self.REAL_TIME]), ")"
+    else:
+        print >> fh, "%sREAL/start:    " % (spaces,), self.times_start[self.REAL_TIME]
+        print >> fh, "%sREAL/end:      " % (spaces,), self.times_end[self.REAL_TIME]
 
     if self.make_target:
         print >> fh, "%sTARGET:        " % (spaces,), self.make_target
