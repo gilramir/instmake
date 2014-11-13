@@ -64,7 +64,7 @@ def usage(plugin_dirs):
     print "instmake usage:"
     print "   BUILD:"
     print "\tinstmake [-L log_file|--vws=prefix|--logs=prefix] [--force]"
-    print "\t\t[--noinst] [-a audit-plugin[,options]]"
+    print "\t\t[--noinst] [--inst-depth LEVEL] [-a audit-plugin[,options]]"
     print "\t\t[-o make_output_file] [-e env-var] [--fd]"
     print "\t\t[--stop-cmd-contains text]"
     print "\t\tmake ..."
@@ -240,6 +240,7 @@ def start_top(log_file_env_var, config, site_dir):
     record_open_fds = 0
     stop_cmd_contains = []
     run_instrumentation = 1
+    inst_depth = None
     audit_name = None
     audit_plugin = None
     audit_env_options = ""
@@ -252,7 +253,7 @@ def start_top(log_file_env_var, config, site_dir):
     longopts = ["text", "stats", "default", "log-version", "log-header",
             "csv", "help",
         "force", "print", "vws=", "fd",
-        "stop-cmd-contains=", "noinst", "logs="]
+        "stop-cmd-contains=", "noinst", "inst-depth=", "logs="]
 
     imlib.SetConfig(config)
 
@@ -323,6 +324,15 @@ def start_top(log_file_env_var, config, site_dir):
 
         elif opt == "--noinst":
             run_instrumentation = 0
+
+        elif opt == "--inst-depth":
+            try:
+                inst_depth = int(arg)
+            except ValueError:
+                sys.exit("--inst-depth argument must be an integer")
+
+            if inst_depth < 0:
+                sys.exit("--inst-depth LEVEL must be >= 0")
 
         elif opt == "-a":
             if audit_env_options:
@@ -504,9 +514,9 @@ def start_top(log_file_env_var, config, site_dir):
 
         # Set up the environment variables.
         os.environ[log_file_env_var] = log_file_name
-        instmake_build.initialize_environment(sys.argv[0],
-            record_env_vars, record_open_fds,
-            stop_cmd_contains, run_instrumentation, audit_env_options)
+        instmake_build.initialize_environment(record_env_vars, record_open_fds,
+            stop_cmd_contains, run_instrumentation, audit_env_options,
+            inst_depth)
 
         # We've got to wrap *something*.
         if len(args) == 0:

@@ -42,6 +42,12 @@ OPTION_OPEN_FDS = "F"
 # to write its own additional fields
 APP_INST_ENV_VAR = "INSTMAKE_APP_INST_FILE"
 
+# Env var for instrumentation depth
+# The value is \d/\d, where the first number is the current
+# Make level (depth), and the second number is how far we should
+# instrument
+INST_DEPTH_ENV_VAR = "INSTMAKE_DEPTH"
+
 class InstmakeJobServerClient(jobserver.JobServerClient):
     env_var = "INSTMAKE_JS_FLAGS"
 
@@ -57,16 +63,25 @@ class InstmakeJobServer(InstmakeJobServerClient):
         # isn't insantiating the class for no reason
         pass
 
-def initialize_environment(argv0, record_env_vars,
+
+def get_shell_string():
+    myself = os.path.abspath(sys.argv[0])
+    return "SHELL=%s" % (myself,)
+
+def initialize_environment(record_env_vars,
     record_open_fds, stop_cmd_contains, run_instrumentation,
-    audit_env_options):
+    audit_env_options, inst_depth):
 
     # Set the appropriate environment variables.
     if run_instrumentation:
-        myself = os.path.abspath(argv0)
+        myself = os.path.abspath(sys.argv[0])
         os.environ[SCRIPT_ENV_VAR] = myself
         os.environ[OPTIONS_ENV_VAR] = ""
-        os.environ["MAKEFLAGS"] = "SHELL=%s" % (myself,)
+        os.environ["MAKEFLAGS"] = get_shell_string()
+
+        # Is there a depth limit?
+        if inst_depth != None:
+            os.environ[INST_DEPTH_ENV_VAR] = "0/%d" % (inst_depth,)
 
     # Set this environment variable to tell the sub-instmake's
     # what to do about retrieving dependency-file information.
@@ -85,6 +100,7 @@ def initialize_environment(argv0, record_env_vars,
     # Stop conditions
     if stop_cmd_contains:
         os.environ[STOP_CMD_CONTAINS_ENV_VAR] = pickle.dumps(stop_cmd_contains)
+
 
 
 def make_pid():
@@ -253,8 +269,43 @@ def write_record(log_file_name, ppid, pid, cretval, times1, times2,
     except OSError, err:
         pass
 
-
 def invoke_child(log_file_name, cli_args):
+    # If there is a limit to the depth we instrument,
+    # check to see if we have reached that depth.
+    if os.environ.has_key(INST_DEPTH_ENV_VAR):
+        try:
+            depth_text = os.environ[INST_DEPTH_ENV_VAR]
+            current_depth_text, depth_limit_text = depth_text.split("/")
+            current_depth = int(current_depth_text)
+            depth_limit = int(depth_limit_text)
+        except ValueError:
+            # Corrupt data. Ignore it.
+            return invoke_child_logger(log_file_name, cli_args)
+
+        # Time to stop instrumenting?
+        if current_depth == depth_limit:
+            # Turn of instrumentation. Actually, we instrument
+            # this one chilt still, but any children that it creates
+            # will not be instrumented.
+            del os.environ[SCRIPT_ENV_VAR]
+            del os.environ[OPTIONS_ENV_VAR]
+            del os.environ[INST_DEPTH_ENV_VAR]
+            shell_string = get_shell_string()
+            mflags = os.environ["MAKEFLAGS"] or ""
+            i = mflags.find(shell_string)
+            if i > -1:
+                mflags = mflags[:i] + mflags[i+len(shell_string):]
+                os.environ["MAKEFLAGS"] = mflags
+        else:
+            # No. Let's increment our depth
+            current_depth += 1
+            os.environ[INST_DEPTH_ENV_VAR] = "%d/%d" % (current_depth,
+                    depth_limit)
+                
+    return invoke_child_logger(log_file_name, cli_args)
+
+
+def invoke_child_logger(log_file_name, cli_args):
     """Run a child process, record statistics, and send
     those stats to the top-most instmake process. cli_args
     are the args that should start with the command to run,
