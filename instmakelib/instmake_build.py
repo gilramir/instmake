@@ -176,7 +176,15 @@ def write_record(log_file_name, ppid, pid, cretval, times1, times2,
         makefile_filenm = os.environ.get("JMAKE_CURRENT_MAKEFILE_FILENAME", None)
     if not makefile_lineno:
         makefile_lineno = os.environ.get("JMAKE_CURRENT_MAKEFILE_LINENO", None)
-  
+
+    # dbgmake variables
+    if not make_target:
+        make_target = os.environ.get("DBGMAKE_TARGET", None)
+    if not makefile_filenm:
+        makefile_filenm = os.environ.get("DBGMAKE_FILENM", None)
+    if not makefile_lineno:
+        makefile_lineno = os.environ.get("DBGMAKE_LINENO", None)
+
     # make variables exported by jmake
     make_vars = {}
     make_env_vars = filter(lambda x: x[:10] == "JMAKE_VAR_",
