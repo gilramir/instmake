@@ -268,7 +268,13 @@ def start_top(log_file_env_var, config, site_dir):
             log_file_names.append(arg)
 
         elif opt == "-P":
-            plugin_dirs.append(arg)
+            if os.path.exists(arg):
+                plugin_dirs.append(arg)
+            else:
+                if os.path.sep in arg:
+                    sys.exit("-P given, but directory %s does not exist" % arg)
+                else:
+                    sys.exit("-P given, but directory %s does not exist. Did you mean -p ?" % arg)
 
         elif opt == "-o":
             make_output_file = arg

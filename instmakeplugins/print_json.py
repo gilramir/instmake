@@ -129,5 +129,5 @@ def Print(self, fh=sys.stdout, indent=0, vspace=1):
     if self.app_inst != None:
         fields[FIELD_APP_INST_FIELDS] = self.app_inst
 
-    json_text = json.dumps(fields, indent=2)
+    json_text = json.dumps(fields, indent=2, separators=(',', ':'))
     print json_text,
