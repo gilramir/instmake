@@ -263,12 +263,15 @@ This option also serves for reading instmake logs. That is, you can
 use --vws to specify an instmake log in all the same cases where you can
 use the -L option.
 
+=back
 
 =head1 REPORTS
 
 The list of reports can be had via "instmake --help", along with a usage
 statement for each report. Each report has its own options. Some of the
 reports include:
+
+=over 4
 
 =item at
 
@@ -331,6 +334,34 @@ operating in the same working directory is considered a duplicate.
 =item duration
 
 Show all jobs, sorted by duration
+
+=item find
+
+Searches for job records using a simple logical syntax simplar to
+the Unix 'find' command. A field's value can be searched with
+'--FIELD regex', where FIELD is one of a few different field names.
+
+The following operands are also allowed:
+
+=over 4
+
+=item -a
+
+logical AND
+
+=item -o
+
+logical OR
+
+=item (
+
+left parenthesis, beginning of logical grouping
+
+=item )
+
+right parenthesis, end of logical grouping
+
+=back
 
 =item grep
 
@@ -417,7 +448,11 @@ argument in a command-line.
 
 Shows how long each job is idle. That is, real_time - (user_time + sys_time)
 
+=back
+
 =head1 PRINT PLUGINS
+
+=over 4
 
 =item csv
 
@@ -447,7 +482,11 @@ makefile line number, and command-line. The output format looks like the
 output of 'grep', and is, not surprisingly, useful when combined with the
 'grep' instmake report.
 
+=back
+
 =head1 AUDIT PLUGINS
+
+=over 4
 
 =item clearaudit[,full][,leave-do]
 
@@ -532,7 +571,7 @@ during the execution of that command.
 
 The strace plugin has multiple options which control its behavior.
 
-=over
+=over 4
 
 =item strace=STRACE
 
@@ -560,6 +599,8 @@ shell scripts.
 
 =back
 
+=back
+
 =head1 SUB-INSTMAKE INTERFACE
 
 B<instmake> -c 'command' ...
@@ -571,6 +612,8 @@ the interface the users uses to start a build under instmake. This "sub-instmake
 is the interface that build programs use to communicate to instmake, that is, when a build
 tool invokes an instmake as a descendent of the user's initial instmake, (thus the "sub" in
 "sub-instmake"), this interface is used.
+
+=over 4
 
 =item -c
 
@@ -588,6 +631,8 @@ seem to violate the standard of one argument after the -c.
 The '-r' option allows build tools to record arbitrary command records in the instmake log.
 instmake will not run this command, just store the information in the instmake log. This is
 useful if you modify your build tools to record extra-process information in the instmake log.
+
+=back
 
 =head1 APPLICATION INSTRUMENTATION INTERFACE
 
