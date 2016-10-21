@@ -52,10 +52,8 @@ class CLIManager:
         for option in options:
             mod.UserOption(option)
 
-    def ParseRecord(self, rec, cwd=None, pathfunc=None):
-        """Find a Parser object that can parse the command-line in the
-        log record."""
-        cmdline_args = shellsyntax.split_shell_cmdline(rec.cmdline)
+    def _ParseCmdline(self, cmdline_string):
+        cmdline_args = shellsyntax.split_shell_cmdline(cmdline_string)
 
         # XXX - We need to be able to handle "segmented" command-lines
         # (using &&, ||, ;, and the redirection symbols). But we don't
@@ -70,7 +68,6 @@ class CLIManager:
             for i, arg in enumerate(cmdline_args):
                 if len(arg) > 1 and arg[0] == "`":
                     cmdline_args = cmdline_args[:i]
-
 
             if ";" in cmdline_args:
                 i = cmdline_args.index(";")
@@ -92,6 +89,14 @@ class CLIManager:
             # which shows up as \n; after the previous filter, it will now
             # be an empty string, so remove that here.
             cmdline_args = filter(lambda x: x != "", cmdline_args)
+
+        return cmdline_args
+
+
+    def ParseRecord(self, rec, cwd=None, pathfunc=None):
+        """Find a Parser object that can parse the command-line in the
+        log record."""
+        cmdline_args = self._ParseCmdline(rec.cmdline)
 
         # Check tool regexes
         for (regex, cb) in self.tool_regexes:

@@ -13,6 +13,7 @@ from utlib.appinst import appinstTests
 from utlib.env import envTests
 from utlib.simple import simpleTests
 from utlib.shell import shellTests
+from utlib.cli import CliTest
 
 def main():
     unittest.main(verbosity=2)

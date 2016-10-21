@@ -70,6 +70,13 @@ class GCC(clibase.CLIPluginBase):
         if args[0] == "dcache":
             start_arg = 1
 
+        if args[0] == "./libtool":
+            start_arg = 1
+            while start_arg < len(args) and args[start_arg].find("cc") == -1:
+                start_arg += 1
+            if args[start_arg].find("cc") == -1:
+                raise clibase.NotHandled
+
         self.compiler = args[start_arg]
         self.toggle_flags = []
         self.sources = []
@@ -79,9 +86,11 @@ class GCC(clibase.CLIPluginBase):
         self.libs = []
         self.I_paths = []
         self.L_paths = []
+        self.r_paths = []
         self.imacro_paths = []
         self.idirafter_paths = []
         self.iwithprefix_paths = []
+        self.isystem_paths = []
         self.include_paths = []
         self.linker_scripts = []
         self.entry_symbol = None
@@ -90,6 +99,8 @@ class GCC(clibase.CLIPluginBase):
         self.xlinker_args = []
         self.params = []
         self.linker_undefined_symbols = []
+        self.version_info = None
+        self.dotd_target = None
 
         STATE_NORMAL = 0
         STATE_G = 1
@@ -104,12 +115,14 @@ class GCC(clibase.CLIPluginBase):
         STATE_MF = 10
         STATE_param = 11
         STATE_u = 12
+        STATE_version_info = 13
+        STATE_MT = 14
 
         path_next_array = None
 
         dot_o_used = 0
         default_dotd_name = 0
-        mf_used = 0 
+        mf_used = 0
         next_Wp_is_dotd = 0
         section_for_section_start = None
 
@@ -117,13 +130,15 @@ class GCC(clibase.CLIPluginBase):
             "-I" : self.I_paths,
             "-imacros" : self.imacro_paths,
             "-idirafter" : self.idirafter_paths,
+            "-isystem" : self.isystem_paths,
             "-iwithprefix" : self.iwithprefix_paths,
             "-include" : self.include_paths,
             "-L" : self.L_paths,
+            "-rpath" : self.r_paths,
             "-T" : self.linker_scripts,
         }
         path_next = path_next_hash.keys()
-    
+
         valid_toggle_flags = [
             "-Bdynamic",
             "-c",
@@ -132,6 +147,7 @@ class GCC(clibase.CLIPluginBase):
             "-dN",
             "-g",
             "-gcoff",
+            "-ggdb",
             "-gstabs+",
             "-idrop-leading-space",
             "-isimplify-pathnames",     # Cisco gcc
@@ -140,10 +156,12 @@ class GCC(clibase.CLIPluginBase):
             "-M",
             "-MG",
             "-MM",
+            "-MP",              # Not really a toggle, but good enough
             "-MMD",
-            "-N",           # linker option
+            "-N",               # linker option
             "-O",
             "-P",
+            "-pthread",
             "-non_shared",
             "-nostdinc",
             "-nostdinc++",
@@ -155,10 +173,10 @@ class GCC(clibase.CLIPluginBase):
             "--print-libgcc",
             "-print-libgcc-file-name",
             "-r",           # linker option
+            "-rdynamic",
             "-S",
+            "-shared",      # linker option
             "-static",
-            "-v",
-            "--version",
             "-w",
         ]
 
@@ -183,6 +201,14 @@ class GCC(clibase.CLIPluginBase):
             if state == STATE_NORMAL:
                 if arg in valid_toggle_flags:
                     self.toggle_flags.append(arg)
+
+                elif arg == "-v" or arg == "--version" or arg == "-dumpversion":
+                    # We're not compilting
+                    raise clibase.NotHandledException
+
+                elif arg == "-print-search-dirs":
+                    # We're not compilting
+                    raise clibase.NotHandledException
 
                 elif len(arg) >= 2 and arg[:2] == "-O":
                     self.toggle_flags.append(arg)
@@ -286,9 +312,15 @@ class GCC(clibase.CLIPluginBase):
                 elif arg == "-u":
                     state = STATE_u
 
+                elif arg == "-version-info":
+                    state = STATE_version_info
+
+                elif arg == "-MT":
+                    state = STATE_MT
+
+####
                 elif len(arg) > 2 and arg[:2] == "-x":
                     self.toggle_flags.append(arg)
-
 
                 elif arg == "-MD":
                     if not mf_used:
@@ -347,7 +379,7 @@ class GCC(clibase.CLIPluginBase):
 
                 elif arg in stdout_dups:
                     continue
-               
+
                 else:
                     path = LOG.normalize_path(arg, cwd)
                     if pathfunc:
@@ -419,6 +451,14 @@ class GCC(clibase.CLIPluginBase):
                 self.linker_undefined_symbols.append(arg)
                 state = STATE_NORMAL
 
+            elif state == STATE_version_info:
+                self.version_info = arg
+                state = STATE_NORMAL
+
+            elif state == STATE_MT:
+                self.dotd_target = arg
+                state = STATE_NORMAL
+
             else:
                 raise clibase.BadCLIException("cli_gcc: Unknown state %s" % (state,))
 
@@ -457,6 +497,7 @@ class GCC(clibase.CLIPluginBase):
                 src_root, src_ext = os.path.splitext(source)
                 output = src_root + ".o"
                 if src_ext == "":
+                    print >> sys.stderr, args
                     raise clibase.BadCLIException("cli_gcc: Source file %s does not end with dot-something." \
                         % (source,))
 
@@ -477,6 +518,7 @@ class GCC(clibase.CLIPluginBase):
         self.imacro_paths = map(callback, self.imacro_paths)
         self.include_paths = map(callback, self.include_paths)
         self.I_paths = map(callback, self.I_paths)
+        self.isystem_paths = map(callback, self.isystem_paths)
 
     def AddDFlag(self, flag):
         if not flag in self.defines:
@@ -491,18 +533,26 @@ class GCC(clibase.CLIPluginBase):
         print "-D flags:           ", self.defines
         print "-U flags:           ", self.undefines
         print "Libs:               ", self.libs
-        print "-I flags:           ", self.I_paths
+        print "-I paths:           ", self.I_paths
         print "-L flags:           ", self.L_paths
-        print "-imacro flags:      ", self.imacro_paths
-        print "-idirafter flags:   ", self.idirafter_paths
-        print "-iwithprefix flags: ", self.iwithprefix_paths
-        print "-include flags:     ", self.include_paths
+        print "-r paths:           ", self.r_paths
+        print "-imacro paths:      ", self.imacro_paths
+        print "-idirafter paths:   ", self.idirafter_paths
+        print "-isystem paths:     ", self.idirafter_paths
+        print "-iwithprefix paths: ", self.iwithprefix_paths
+        print "-include paths:     ", self.include_paths
         print "Linker scripts:     ", self.linker_scripts
         print "Entry symbol:       ", self.entry_symbol
         print "Printed File Name:  ", self.print_file_name
         print "-Xlinker args:      ", self.xlinker_args
         print "--param args:       ", self.params
         print "-u symbols:         ", self.linker_undefined_symbols
+
+        if self.version_info is not None:
+            print "-version-info:      ", self.version_info
+
+        if self.dotd_target is not None:
+            print "-MT:                ", self.dotd_target
 
         if self.section_starts:
             for (section, start) in self.section_starts.items():
@@ -526,6 +576,12 @@ class GCC(clibase.CLIPluginBase):
 
         ok *= self.CompareValue(dir, my_file, other_file, self.gnum, other.gnum, "G numbers", collator)
 
+        ok *= self.CompareValue(dir, my_file, other_file, self.version_info, other.version_info,
+            "version-info", collator)
+
+        ok *= self.CompareValue(dir, my_file, other_file, self.dotd_target, other.dotd_target,
+            "-MT", collator)
+
         # XXX - -D is unordered, and -U is unordered, but there should be
         # some order *between* -D and -U, in case we -D and -U the
         # same symbol.
@@ -540,22 +596,28 @@ class GCC(clibase.CLIPluginBase):
 
         if not ignore_Ipaths:
             ok *= self.CompareOrderedList(dir, my_file, other_file,
-                self.I_paths, other.I_paths, "-I flags", collator)
+                self.I_paths, other.I_paths, "-I paths", collator)
 
         ok *= self.CompareOrderedList(dir, my_file, other_file,
             self.L_paths, other.L_paths, "-L flags", collator)
 
         ok *= self.CompareOrderedList(dir, my_file, other_file,
-            self.imacro_paths, other.imacro_paths, "-imacro flags", collator)
+            self.r_paths, other.r_paths, "-r paths", collator)
 
         ok *= self.CompareOrderedList(dir, my_file, other_file,
-            self.idirafter_paths, other.idirafter_paths, "-idirafter flags", collator)
+            self.imacro_paths, other.imacro_paths, "-imacro paths", collator)
 
         ok *= self.CompareOrderedList(dir, my_file, other_file,
-            self.iwithprefix_paths, other.iwithprefix_paths, "-iwithprefix flags", collator)
+            self.idirafter_paths, other.idirafter_paths, "-idirafter paths", collator)
 
         ok *= self.CompareOrderedList(dir, my_file, other_file,
-            self.include_paths, other.include_paths, "-include flags", collator)
+            self.isystem_paths, other.isystem_paths, "-isystem paths", collator)
+
+        ok *= self.CompareOrderedList(dir, my_file, other_file,
+            self.iwithprefix_paths, other.iwithprefix_paths, "-iwithprefix paths", collator)
+
+        ok *= self.CompareOrderedList(dir, my_file, other_file,
+            self.include_paths, other.include_paths, "-include paths", collator)
 
         ok *= self.CompareOrderedList(dir, my_file, other_file,
             self.linker_scripts, other.linker_scripts, "linker scripts", collator)

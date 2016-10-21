@@ -41,6 +41,7 @@ def split_shell_cmdline(cmdline, leave_quotes=0):
         # and for the comment hash mark, which we will use as the
         # cut-off point.
         if state == STATE_NORMAL:
+#            print "NORMAL c=(%s)" % (c,)
             if c == "'" or c == '"' or c == '`':
                 states.append(state)
                 state = STATE_QUOTE
@@ -64,8 +65,9 @@ def split_shell_cmdline(cmdline, leave_quotes=0):
             elif c == " " or c == "\t" or c == "\n":
                 if current_arg != None:
                     argv.append(current_arg)
+#                    print "APPEND ARG (%s)" % (current_arg,)
                     current_arg = None
- 
+
                 # Don't push state; we replace current state.
                 state = STATE_WHITESPACE
 
@@ -76,8 +78,9 @@ def split_shell_cmdline(cmdline, leave_quotes=0):
                     current_arg += c
 
 
-        # Nothing is special inside single quotes excpet another single quote. 
+        # Nothing is special inside single quotes excpet another single quote.
         elif state == STATE_QUOTE:
+#            print "QUOTE c=(%s)" % (c,)
             if c == qchar:
                 try:
                     state = states.pop()
@@ -90,6 +93,10 @@ def split_shell_cmdline(cmdline, leave_quotes=0):
                     else:
                         current_arg += c
 
+            elif c == '\\':
+                states.append(state)
+                state = STATE_ESCAPE
+
             else:
                 if current_arg == None:
                     current_arg = c
@@ -100,6 +107,7 @@ def split_shell_cmdline(cmdline, leave_quotes=0):
         # The escape state lasts for only one character.
         # Just pop the old state.
         elif state == STATE_ESCAPE:
+#            print "ESC c=(%s)" % (c,)
             if c in [ "r", "n" ]:
                 c = '\\' + c
 
@@ -110,6 +118,7 @@ def split_shell_cmdline(cmdline, leave_quotes=0):
 
             try:
                 state = states.pop()
+#                print "CURRENT_ARG: (%s) state=%s" % (current_arg, state)
             except IndexError:
                 return cmdline
 

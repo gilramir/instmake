@@ -63,6 +63,9 @@ class GLD(clibase.CLIPluginBase):
             "-Bdynamic",
             "--cref",
             "--cisco-single-segment",   # cisco specific
+            "-d",
+            "-dc",
+            "-dp",
             "--dynamic-linker",     # ??? toggle?
             "--emit-relocs",
             "-export-dynamic",

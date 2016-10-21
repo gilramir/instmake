@@ -40,7 +40,7 @@ class Archive(clibase.CLIPluginBase):
         self.relpos = None
         self.count = None
 
-        valid_operations = "dmpqrtx"
+        valid_operations = "-dmpqrtx"
         valid_modifiers = "abcfilNoPsSuvV"
         modifiers_that_take_relpos = "abi"
         modifiers_that_take_count = "N"
