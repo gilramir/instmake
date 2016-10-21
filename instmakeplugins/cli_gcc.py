@@ -183,12 +183,14 @@ class GCC(clibase.CLIPluginBase):
         # All these must start with "-" because of the place
         # where regex_toggle_flags is checked.
         regex_toggle_flags = [
-                re.compile(r"-g\d"),
-                re.compile(r"-ggdb\d"),
-                re.compile(r"-gstabs\d"),
-                re.compile(r"-gcoff\d"),
-                re.compile(r"-gxcoff\d"),
-                re.compile(r"-gvms\d"),
+            re.compile(r"-g\d"),
+            re.compile(r"-ggdb\d"),
+            re.compile(r"-gstabs\d"),
+            re.compile(r"-gcoff\d"),
+            re.compile(r"-gxcoff\d"),
+            re.compile(r"-gvms\d"),
+            re.compile(r"-gvms\d"),
+            re.compile(r"-std=gnu\d+"),
         ]
 
         stdout_dups = [ "1>&2", "&>" ]
@@ -283,6 +285,14 @@ class GCC(clibase.CLIPluginBase):
                         if pathfunc:
                             path = pathfunc(path)
                         self.linker_scripts.append(path)
+
+                elif arg[:2] == "-o" and len(arg) > 2:
+                    # -ofilename
+                    path = LOG.normalize_path(arg[2:], cwd)
+                    if pathfunc:
+                        path = pathfunc(path)
+                    self.outputs.append(path)
+                    dot_o_used = 1
 
                 elif arg == "-o":
                     state = STATE_o
@@ -654,3 +664,5 @@ def register(manager):
     manager.RegisterToolRegex(gcc_parser, re.compile(r"^cc\."))
     manager.RegisterToolRegex(gcc_parser, re.compile(r"^gcc$"))
     manager.RegisterToolRegex(gcc_parser, re.compile(r"^gcc\."))
+    manager.RegisterToolRegex(gcc_parser, re.compile(r"gcc$"))
+    manager.RegisterToolRegex(gcc_parser, re.compile(r"^\S+/gcc$"))

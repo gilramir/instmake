@@ -152,7 +152,7 @@ def do_regular_compare(plugin_manager, log_file_names, map1, map2,
         pid_a = pids[0]
     else:
         pid_a = None
-    
+
     if len(pids) > 1:
         pid_b = pids[1]
     else:
@@ -288,7 +288,7 @@ class Build:
                     parser.Dump()
                 else:
                     print "No parser found."
-                
+
                 # Finished findind all the PIDs asked for?
                 if pids:
                     print
@@ -372,7 +372,7 @@ class Build:
                 all_sub_items.append(sub_item)
             print
         return all_sub_items
-   
+
     def Compare(self, other, show_ok_files):
         (common_dirs, excl1_dirs, excl2_dirs) = pysets.CompareLists(\
             self.dirs.keys(), other.dirs.keys())
@@ -389,7 +389,6 @@ class Build:
             print "All directories in", NAME_A, "are also in", NAME_B
 
         print
-
 
         if excl2_dirs:
             excl2_dirs.sort()
@@ -419,7 +418,7 @@ class Build:
             (common_outputs, excl1_outputs, excl2_outputs) = \
                 pysets.CompareLists(self.dirs[dir].keys(),
                 other.dirs[dir].keys())
-       
+
 #            print "%d common files." % (len(common_outputs),)
             common_outputs.sort()
 
