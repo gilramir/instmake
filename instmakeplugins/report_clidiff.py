@@ -328,33 +328,34 @@ class Build:
                 parser_outputs.append(rec.NormalizePath(output_file))
 
             for output_file in parser_outputs:
-                (dir, file) = os.path.split(output_file)
-#                print "DIR=%s file=%s" % (dir, file)
+                (dir_, file_) = os.path.split(output_file)
 
-                dentry_outputs = self.dirs.setdefault(dir, {})
+                dentry_outputs = self.dirs.setdefault(dir_, {})
 
-                if dentry_outputs.has_key(file):
+                if dentry_outputs.has_key(file_):
                     self.num_multiple += 1
                     print >> sys.stderr, \
-                        "%s: multiple commands to create %s" % (self.filename, output_file)
+                        "%s: multiple commands to create %s: %s and %s" % (self.filename, output_file,
+                                dentry_outputs[file_][1], rec.pid)
                     print \
-                        "%s: multiple commands to create %s" % (self.filename, output_file)
+                        "%s: multiple commands to create %s: %s and %s" % (self.filename, output_file,
+                                dentry_outputs[file_][1], rec.pid)
 
                     # Use the rec that finished last.
-                    (stored_parser, stored_pid) = dentry_outputs[file]
+                    (stored_parser, stored_pid) = dentry_outputs[file_]
                     stored_rec = pid_hash[stored_pid]
                     stored_rec_end_time = stored_rec.times_end[stored_rec.REAL_TIME]
                     rec_end_time = rec.times_end[rec.REAL_TIME]
 
                     if rec_end_time > stored_rec_end_time:
-                        dentry_outputs[file] = (parser, rec.pid)
+                        dentry_outputs[file_] = (parser, rec.pid)
 #                        print "Overwrote stored record with", rec
 #                    else:
 #                        print "Did not overwrite stored record with", rec
 
                 else:
                     self.num_unique += 1
-                    dentry_outputs[file] = (parser, rec.pid)
+                    dentry_outputs[file_] = (parser, rec.pid)
 
     def print_2_level_list(self, items, sub_hash):
         i = 1
