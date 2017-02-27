@@ -34,7 +34,8 @@ def usage():
     print "\t-u|--user"
     print "\t-s|--sys"
     print "\t-c|--cpu     (default, user + sys)"
-    print "\t--non-make   (non-make processes)"
+    print "\t--non-make   (show only non-make processes)"
+    print "\t--make       (show only make processes)"
 
 def report(log_file_names, args):
 
@@ -48,11 +49,12 @@ def report(log_file_names, args):
     ascending = 1
     sort_field = "CPU"
     include_make_procs = True
+    only_make_procs = False
 
     # We have a slew of options
     optstring = "adrusc"
     longopts = ["ascending", "descending",
-        "real", "user", "sys", "cpu", "non-make"]
+        "real", "user", "sys", "cpu", "non-make", "make"]
 
     try:
         opts, args = getopt.getopt(args, optstring, longopts)
@@ -73,6 +75,8 @@ def report(log_file_names, args):
             sort_field = "SYS"
         elif opt == "-c" or opt == "--cpu":
             sort_field = "CPU"
+        elif opt == "--make":
+            only_make_procs = True
         elif opt == "--non-make":
             include_make_procs = False
         else:
@@ -95,9 +99,15 @@ def report(log_file_names, args):
         # Create an object for each record and add it to our array
         records.append(rec)
         ppids[rec.ppid] = None
+#        ppids.setdefault(rec.ppid, []).append(rec.pid)
 
     if not records:
         return
+
+    if only_make_procs:
+        # Remove chlid-processes from records
+        records = [rec for rec in records
+                    if ppids.has_key(rec.pid)]
 
     if not include_make_procs:
         # Remove parent-processes from records
