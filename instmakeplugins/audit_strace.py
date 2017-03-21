@@ -27,8 +27,7 @@ EXTERNAL_LOGS = "X"
 INTERNAL_LOGS = "I"
 
 # strace_prog = 'strace'
-#STRACE_PROG = "strace"
-STRACE_PROG = "/ws/rathreya-sjc/lbt-prototype/strace/bin/strace"
+STRACE_PROG = "strace"
 
 # Environment variables
 STRACE_PROG_ENV_VAR = "INSTMAKE_STRACE_PROG"
@@ -36,7 +35,7 @@ LOG_DIR_ENV_VAR = "INSTMAKE_STRACE_LOG_DIR"
 
 
 # it should be only "make", "jmake" for the actual plugin
-MAKE_CMDS      = [ "make", "jmake",  "iosmake", "cbs" ] 
+MAKE_CMDS      = [ "make", "jmake", "dbgmake", "iosmake", "cbs" ] 
 NO_STRACE_CMDS = [ "mib-sys-symlinks" ]
 
 
@@ -101,9 +100,9 @@ def CheckCLI(options):
     try:
         # No need to grab the output; we are only checking that
         # execution of cmdv does not fail.
-        subprocess.check_output(cmdv, stderr=subprocess.STDOUT)
-    except:
-        sys.exit("Unable to execute '%s'" % (' '.join(cmdv)))
+        subprocess.check_call(cmdv, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        sys.exit("Unable to execute '%s': %s" % (' '.join(cmdv)), str(e))
 
     audit_options = "|".join([LEAVE_CMDS, EXTERNAL, STRACE, WORK_DIR])
     return audit_options

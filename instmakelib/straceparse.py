@@ -51,6 +51,10 @@ INFO_REGEX = re.compile(r"""
 """, re.VERBOSE )
 
 
+INFO_REGEX2 = re.compile(r"""
+((?P<pid>\d+)\s+)?                    # PID, may or may not be present.
+\+\+\+(?P<errmsg>.*)\+\+\+            # info msgs like child exited starts with ---
+""", re.VERBOSE )
 
 
 class StraceParseError(Exception):
@@ -94,6 +98,8 @@ class StraceOutput:
     
         # matching a info message.
         if INFO_REGEX.match(line):
+            return None
+        if INFO_REGEX2.match(line):
             return None
     
         (pid, name, args, retval, errmsg, state) = self.__parse_strace_op(line)
@@ -303,8 +309,14 @@ def _test():
         data = open(file).read()
         strace_op_file = StraceOutput(data)
         print "File:", file
-        print "Written:", strace_op_file.get_files_written()
-        print "Read:", strace_op_file.get_files_read()
+        print
+        print "Written:"
+	for i, name in enumerate(strace_op_file.get_files_written(), 1):
+            print "\t%d. %s" % (i, name)
+        print
+        print "Read:"
+	for i, name in enumerate(strace_op_file.get_files_read(), 1):
+            print "\t%d. %s" % (i, name)
 
 if __name__ == '__main__':
     _test()
