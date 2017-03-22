@@ -13,8 +13,12 @@ def usage():
     print "ptree:", description
     print "ptree [OPTS] [PID]"
     print "\t-f|--full      show full record of jobs, not just summary."
-    print "\t-m|--make      shows only 'make' jobs; implies --full."
-    print "\t--make-targets shows only 'make' job targets."
+    print "\t-m|--make      show only 'make' jobs; implies --full."
+    print "\t--make-targets show only 'make' job targets; implies -m but not -f."
+    print "\t-r|--real      show real time when using --make-targets [default]"
+    print "\t-u|--user      show user time when using --make-targets"
+    print "\t-s|--sys       show sys time when using --make-targets"
+    print "\t-c|--cpu       show cpu (usr+sys) time when using --make-targets"
     print "\t[PID]          start tree from PID"
 
 def print_rec(rec, user_data, indent):
@@ -49,7 +53,7 @@ def print_make_targets(srec, indent):
                 dir = rec.cmdline_args[chgdir_i + 1]
 
         print "%s%s %s %d %s" % (spaces, dir, rec.make_target, len(children_srecs),
-            LOG.hms(rec.diff_times[rec.REAL_TIME]))
+            LOG.hms(rec.diff_times[rec.TimeIndex(TIME_TYPE)]))
         children_srecs.sort()
 
         for child_srec in children_srecs:
@@ -60,7 +64,11 @@ OUTPUT_FULL = 1
 OUTPUT_MAKE = 2
 OUTPUT_MAKE_TARGETS = 3
 
+TIME_INDEX = LOG.LogRecord.REAL_TIME
+TIME_TYPE = "REAL"
+
 def report(log_file_names, args):
+    global TIME_TIME
     show_entire_record = 0
     only_makes = 0
     start_pid = None
@@ -72,8 +80,8 @@ def report(log_file_names, args):
     else:
         log_file_name = log_file_names[0]
 
-    optstring = "fm"
-    longopts = ["full", "make", "make-targets"]
+    optstring = "fmrusc"
+    longopts = ["full", "make", "make-targets", "real", "usr", "sys", "cpu"]
 
     try:
         opts, args = getopt.getopt(args, optstring, longopts)
@@ -97,6 +105,18 @@ def report(log_file_names, args):
                 sys.exit("Only one output type allowed")
             only_makes = 1
             output_type = OUTPUT_MAKE_TARGETS
+        elif opt == "--real" or opt == "-r":
+            TIME_INDEX = LOG.LogRecord.REAL_TIME
+            TIME_TYPE = "REAL"
+        elif opt == "--user" or opt == "-u":
+            TIME_INDEX = LOG.LogRecord.USER_TIME
+            TIME_TYPE = "USER"
+        elif opt == "--sys" or opt == "-s":
+            TIME_INDEX = LOG.LogRecord.SYS_TIME
+            TIME_TYPE = "SYS"
+        elif opt == "--cpu" or opt == "-c":
+            TIME_INDEX = LOG.LogRecord.CPU_TIME
+            TIME_TYPE = "CPU"
         else:
             assert 0, "Unexpected option %s" % (opt,)
 
@@ -121,7 +141,7 @@ def report(log_file_names, args):
 
         ptree.AddRec(rec)
 
-    ptree.Finish() 
+    ptree.Finish()
 
     if start_pid:
         try:
@@ -141,6 +161,10 @@ def report(log_file_names, args):
         if output_type == OUTPUT_MAKE:
             print_srec(srec, 0)
         elif output_type == OUTPUT_MAKE_TARGETS:
+            print "Makes and their targets"
+            print
+            print "Directory        Target        # Child Processes     ", TIME_TYPE, "time"
+            print
             print_make_targets(srec, 0)
         else:
             assert 0, "Unexpected output_type: " + output_type
